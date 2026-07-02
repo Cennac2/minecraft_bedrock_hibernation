@@ -307,8 +307,7 @@ checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
 [[package]]
 name = "rust-raknet"
 version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c32c2abcfa960987e4cb57c3e2a094e99912cc25573221c3ea848a2b4fa4b1b1"
+source = "git+https://github.com/Cennac2/rust-raknet#ec74419f8118a8bdcf817a479e8ee11cf783ddf8"
 dependencies = [
  "bytes",
  "rand",
