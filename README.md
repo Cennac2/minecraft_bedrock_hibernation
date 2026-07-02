@@ -87,8 +87,6 @@ discuss the approach before putting in the work.
 
 - [ ] Harden locking around auto-start so a player connecting and `mbh start`
       can't race each other into starting the server twice.
-- [ ] Configurable idle timeout to auto-stop the server after a period of
-      no players.
 - [ ] Tests around config parsing and the hibernation/wake flow.
 
 ## License
