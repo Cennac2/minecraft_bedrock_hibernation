@@ -92,18 +92,26 @@ pub async fn start_hibernating_proxy() {
 }
 
 async fn update_server_motd(motd_handle: Arc<RwLock<String>>, config: Config, hibernating_motd: String) {
+    let mut was_online = false;
+
     loop {
         let server_motd = get_bedrock_server_motd(Ipv4Addr::LOCALHOST, config.bedrock_server_port).await;
+        let online = !server_motd.is_empty();
+
+        // Print the startup message whenever server goes offline.
+        // Its kind of not supposed to be here because it has nothing
+        // to do with motd but eh.
+        if !online && was_online {
+            println!("{}", get_startup_message());
+        }
+
+        was_online = online;
 
         println!("MOTD: {}", server_motd);
-        if server_motd.is_empty() {
+        if online {
             *motd_handle.write().await = hibernating_motd.clone();
         } else {
             *motd_handle.write().await = server_motd;
-        }
-
-        {
-            println!("Final MOTD: {}", motd_handle.read().await);
         }
 
         tokio::time::sleep(Duration::from_secs(10)).await;
