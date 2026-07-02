@@ -81,8 +81,6 @@ pub async fn start_hibernating_proxy() {
     let console_clients_amount = Arc::clone(&clients_amount);
     tokio::spawn(handle_user_input(console_child_state, console_config, console_clients_amount));
 
-    tokio::task::spawn(handle_status(config.clone()));
-
     let motd_handle = {
         let server = shared_server.lock().await;
         server.motd_handle()
@@ -128,26 +126,6 @@ async fn handle_exit(shutdown_child: SharedChild) {
 
     println!("[MBH] Shutdown complete.");
     std::process::exit(0);
-}
-
-async fn handle_status(config: Config) {
-    let mut was_online = false;
-
-    loop {
-        let online = is_bedrock_server_online(Ipv4Addr::LOCALHOST, config.bedrock_server_port, 5).await;
-
-        if online && !was_online {
-            println!("[MBH] Bedrock server started successfully.");
-        }
-
-        if !online && was_online {
-            println!("[MBH] Bedrock server stopped.");
-        }
-
-        was_online = online;
-
-        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-    }
 }
 
 pub async fn proxy_handle_connections(shared_server: Arc<Mutex<RaknetListener>>, config: Config, child_state: SharedChild, clients_amount: Arc<Mutex<u32>>) {
