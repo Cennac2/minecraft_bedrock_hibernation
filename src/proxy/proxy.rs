@@ -34,10 +34,9 @@ pub fn do_startup_checks() {
     } 
 }
 
-
 pub async fn start_proxy() {
     do_startup_checks();
-    
+
     let config = get_config();
 
     let sock_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), config.port);
