@@ -83,8 +83,6 @@ async fn handle_exit(shutdown_child: SharedChild) {
         return;
     }
 
-    println!("\n[MBH] Ctrl+C received, shutting down...");
-
     let guard = shutdown_child.lock().await;
     if let Some(server) = guard.as_ref() {
         let mut server = server.lock().await;

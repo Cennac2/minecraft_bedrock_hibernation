@@ -46,7 +46,6 @@ pub async fn handle_user_input(child_state: SharedChild, config: Config, counter
                     if already_running {
                         println!("[MBH] Bedrock Server is already running.");
                     } else {
-                        println!("[MBH] Starting Bedrock Server...");
                         let current = guard.take();
                         *guard = Some(get_main_child(current, &config, Arc::clone(&counter)).await);
                     }

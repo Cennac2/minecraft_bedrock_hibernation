@@ -172,7 +172,7 @@ pub async fn stop_bedrock_server(server: &mut BedrockServer) {
 
     println!("[MBH] Waiting for Bedrock Server to exit...");
     match server.child.wait().await {
-        Ok(status) => println!("[MBH] Bedrock Server exited with status: {:?}", status),
+        Ok(_) => {},
         Err(e) => eprintln!("[MBH] Error while waiting for Bedrock Server to exit: {:?}", e),
     }
 
