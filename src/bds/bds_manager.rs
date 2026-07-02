@@ -182,6 +182,4 @@ pub async fn stop_bedrock_server(server: &mut BedrockServer) {
     if let Some(handle) = server.stderr_handle.take() {
         let _ = handle.await;
     }
-
-    println!("{}", get_startup_message());
 }

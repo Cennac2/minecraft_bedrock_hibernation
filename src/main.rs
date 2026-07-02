@@ -6,5 +6,5 @@ mod bds;
 async fn main() {
     println!("Starting up Minecraft Bedrock Hibernation");
     
-    proxy::proxy::start_proxy().await;
+    proxy::proxy::start_hibernating_proxy().await;
 }

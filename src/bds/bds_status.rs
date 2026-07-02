@@ -3,6 +3,21 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use rust_raknet::RaknetSocket;
 use tokio::time::timeout;
 
+pub async fn get_bedrock_server_motd(addr: Ipv4Addr, port: u16) -> String {
+    let sock_addr = SocketAddr::new(IpAddr::V4(addr), port);
+
+    let result = timeout(
+        Duration::from_secs(1),
+        RaknetSocket::ping(&sock_addr),
+    ).await;
+
+    match result {
+        Ok(Ok((_, motd))) => motd,
+        Ok(Err(_)) => String::new(),
+        Err(_) => String::new()
+    }
+}
+
 pub async fn is_bedrock_server_online(addr: Ipv4Addr, port: u16, max_attempts: u32) -> bool {
     for _ in 1..=max_attempts {
         if ping_server(addr, port).await {

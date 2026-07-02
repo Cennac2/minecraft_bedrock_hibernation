@@ -1,10 +1,13 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use std::time::Duration;
+use rust_raknet::error::RaknetError;
+use tokio::sync::{Mutex, RwLock};
 use rust_raknet::{RaknetListener, RaknetSocket};
 use std::path::Path;
 
 use crate::bds::bds_manager::{SharedChild, get_main_child, stop_bedrock_server};
+use crate::bds::bds_status::get_bedrock_server_motd;
 use crate::bds::console_io::handle_user_input;
 use crate::bds::proxy_connector::proxy_connection;
 use crate::config_manager::config::Config;
@@ -34,15 +37,15 @@ pub fn do_startup_checks() {
     } 
 }
 
-pub async fn start_proxy() {
+pub async fn start_hibernating_proxy() {
     do_startup_checks();
 
     let config = get_config();
 
     let sock_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), config.port);
     
-    let mut server = match RaknetListener::bind(&sock_addr).await {
-        Ok(srv) => srv,
+    let shared_server: Arc<Mutex<RaknetListener>> = match RaknetListener::bind(&sock_addr).await {
+        Ok(srv) => Arc::new(Mutex::new(srv)),
         Err(e) => {
             println!("Failed to start server!");
             panic!("Error: {:?}", e);
@@ -50,10 +53,17 @@ pub async fn start_proxy() {
     };
 
     let advert = get_advertisement(config.clone());
+    let default_motd;
 
-    server.listen().await;
+    {
+        let mut server = shared_server.lock().await;
 
-    server.set_motd(&advert.name, advert.max_players, &advert.protocol.to_string(), &advert.version, advert.gamemode.as_str(), advert.port).await;
+        server.listen().await;
+
+        server.set_motd(&advert.name, advert.max_players, &advert.protocol.to_string(), &advert.version, advert.gamemode.as_str(), advert.port).await;
+
+        default_motd = server.get_motd().await;
+    }
 
     println!("{}", get_startup_message());
 
@@ -69,12 +79,37 @@ pub async fn start_proxy() {
     let console_child_state = child_state.clone();
     let console_config = config.clone();
     let console_clients_amount = Arc::clone(&clients_amount);
-    tokio::spawn(async move {
-        handle_user_input(console_child_state, console_config, console_clients_amount).await;
-    });
+    tokio::spawn(handle_user_input(console_child_state, console_config, console_clients_amount));
 
-    tokio::task::spawn(handle_status());
-    proxy_handle_connections(server, config, child_state, Arc::clone(&clients_amount)).await;
+    tokio::task::spawn(handle_status(config.clone()));
+
+    let motd_handle = {
+        let server = shared_server.lock().await;
+        server.motd_handle()
+    };
+
+    tokio::task::spawn(update_server_motd(motd_handle, config.clone(), default_motd));
+
+    proxy_handle_connections(shared_server, config, child_state, Arc::clone(&clients_amount)).await;
+}
+
+async fn update_server_motd(motd_handle: Arc<RwLock<String>>, config: Config, hibernating_motd: String) {
+    loop {
+        let server_motd = get_bedrock_server_motd(Ipv4Addr::LOCALHOST, config.bedrock_server_port).await;
+
+        println!("MOTD: {}", server_motd);
+        if server_motd.is_empty() {
+            *motd_handle.write().await = hibernating_motd.clone();
+        } else {
+            *motd_handle.write().await = server_motd;
+        }
+
+        {
+            println!("Final MOTD: {}", motd_handle.read().await);
+        }
+
+        tokio::time::sleep(Duration::from_secs(10)).await;
+    }
 }
 
 async fn handle_exit(shutdown_child: SharedChild) {
@@ -95,11 +130,11 @@ async fn handle_exit(shutdown_child: SharedChild) {
     std::process::exit(0);
 }
 
-async fn handle_status() {
+async fn handle_status(config: Config) {
     let mut was_online = false;
 
     loop {
-        let online = is_bedrock_server_online(Ipv4Addr::LOCALHOST, get_config().bedrock_server_port, 5).await;
+        let online = is_bedrock_server_online(Ipv4Addr::LOCALHOST, config.bedrock_server_port, 5).await;
 
         if online && !was_online {
             println!("[MBH] Bedrock server started successfully.");
@@ -111,14 +146,17 @@ async fn handle_status() {
 
         was_online = online;
 
-        tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
     }
 }
 
-pub async fn proxy_handle_connections(mut server: RaknetListener, config: Config, child_state: SharedChild, clients_amount: Arc<Mutex<u32>>) {
+pub async fn proxy_handle_connections(shared_server: Arc<Mutex<RaknetListener>>, config: Config, child_state: SharedChild, clients_amount: Arc<Mutex<u32>>) {
     let mut raknet_version: Option<u8> = None;
     loop {
-        let conn = server.accept().await;
+        let conn: Result<RaknetSocket, RaknetError> = {
+            let mut server = shared_server.lock().await;
+            server.accept().await
+        };
 
         match conn {
             Ok(c) => {
