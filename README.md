@@ -2,7 +2,7 @@
 
 A lightweight proxy that puts your Minecraft Bedrock dedicated server to sleep
 when nobody's playing, and wakes it back up automatically the moment a player
-tries to connect — so you're not burning resources (or hosting costs) running
+tries to connect, so you're not burning resources (or hosting costs) running
 a full server 24/7 for a handful of active hours a day.
 
 ## How it works
@@ -14,11 +14,11 @@ the connection through.
 
 ## Requirements
 
-- [Rust](https://www.rust-lang.org/tools/install) (2021 edition or later)
+- [Rust](https://www.rust-lang.org/tools/install) (2024 edition or later)
 - A Minecraft Bedrock Dedicated Server (BDS) binary, downloaded separately
   from [minecraft.net](https://www.minecraft.net/en-us/download/server/bedrock)
 
-## Installation
+## Building
 
 ```bash
 git clone https://github.com/Cennac2/minecraft_bedrock_hibernation.git
@@ -50,12 +50,14 @@ directory:
 | `port`                 | The public port players connect to (proxy's listening port)                               |
 | `bedrock_server_port`  | The port the real Bedrock server runs on internally (should NOT be equal to proxy's port) |
 | `protocol_version`     | Bedrock protocol version to advertise; set to `-1` to auto-detect from `version`          |
-| `version`              | Minecraft Bedrock version string shown in the server list                                 |
+| `version`              | Minecraft Bedrock version string shown in the server list and used for protocol version   |
 | `hibernating_motd`     | Message shown while the server is asleep                                                  |
 | `bedrock_file_path`    | Path to your Bedrock server executable                                                    |
 
 Edit the file to point `bedrock_file_path` at your actual server binary, then
 restart `minecraft_bedrock_hibernation`.
+You may also make the `mbh_config.json` from scratch to have the config ready
+on first startup.
 
 ## Usage
 
@@ -86,9 +88,8 @@ discuss the approach before putting in the work.
 
 ## TODO
 
-- [ ] Harden locking around auto-start so a player connecting and `mbh start`
-      can't race each other into starting the server twice.
-- [ ] Tests around config parsing and the hibernation/wake flow.
+- [ ] Display a kick message when a player joins while the server is hibernating.
+- [ ] Update the server MOTD when the server is online.
 
 ## License
 
