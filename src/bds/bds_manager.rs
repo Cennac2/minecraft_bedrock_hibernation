@@ -10,11 +10,13 @@ use tokio::sync::Mutex;
 use crate::bds::bds_status::is_bedrock_server_online;
 use crate::bds::console_io::{handle_bds_error, handle_bds_output};
 use crate::config_manager::config::Config;
+use crate::proxy::proxy::get_startup_message;
 
 pub struct BedrockServer {
     pub child: Child,
     stdout_handle: Option<JoinHandle<()>>,
     stderr_handle: Option<JoinHandle<()>>,
+    hibernate_handle: Option<JoinHandle<()>>
 }
 
 pub type SharedChild = Arc<Mutex<Option<Arc<Mutex<BedrockServer>>>>>;
@@ -50,13 +52,19 @@ pub async fn start_bedrock_server(config: &Config, counter: Arc<Mutex<u32>>) -> 
         child,
         stdout_handle,
         stderr_handle,
+        hibernate_handle: None
     }));
 
-    start_should_hibernate_check_loop(
+    let hibernate_handle = tokio::spawn(start_should_hibernate_check_loop(
         Arc::clone(&server),
         config.stop_empty_server_after_seconds,
         counter,
-    ).await;
+    ));
+
+    {
+        let mut guard = server.lock().await;
+        guard.hibernate_handle = Some(hibernate_handle);
+    }
 
     server
 }
@@ -76,8 +84,9 @@ pub async fn start_should_hibernate_check_loop(
 
             if clients_amount == 0 {
                 println!("[MBH] No players connected for {} seconds, stopping server..", duration);
-
+                
                 let mut guard = server.lock().await;
+                guard.hibernate_handle.take();
                 stop_bedrock_server(&mut guard).await;
                 break;
             }
@@ -147,6 +156,10 @@ pub async fn get_main_child(mut server: Option<Arc<Mutex<BedrockServer>>>, confi
 }
 
 pub async fn stop_bedrock_server(server: &mut BedrockServer) {
+    if let Some(handle) = server.hibernate_handle.take() {
+        handle.abort();
+    }
+
     if let Some(stdin) = server.child.stdin.as_mut() {
         if let Err(e) = stdin.write_all(b"stop\n").await {
             eprintln!("[MBH] Failed to write stop command: {:?}", e);
@@ -170,5 +183,5 @@ pub async fn stop_bedrock_server(server: &mut BedrockServer) {
         let _ = handle.await;
     }
 
-    println!("[MBH] Bedrock Server fully stopped, all output flushed.");
+    println!("{}", get_startup_message());
 }
