@@ -106,8 +106,6 @@ async fn update_server_motd(motd_handle: Arc<RwLock<String>>, config: Config, hi
         }
 
         was_online = online;
-
-        println!("MOTD: {}", server_motd);
         if online {
             *motd_handle.write().await = hibernating_motd.clone();
         } else {

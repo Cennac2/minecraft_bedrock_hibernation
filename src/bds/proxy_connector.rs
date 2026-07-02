@@ -52,7 +52,7 @@ pub async fn proxy_connection(
         _ = server_to_client => {}
     }
 
-    println!("{} has left the server!", client.peer_addr().unwrap());
+    println!("[MBH] {} has left the server!", client.peer_addr().unwrap());
 
     {
         let mut client_amount = counter.lock().await;

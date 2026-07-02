@@ -10,7 +10,6 @@ use tokio::sync::Mutex;
 use crate::bds::bds_status::is_bedrock_server_online;
 use crate::bds::console_io::{handle_bds_error, handle_bds_output};
 use crate::config_manager::config::Config;
-use crate::proxy::proxy::get_startup_message;
 
 pub struct BedrockServer {
     pub child: Child,
