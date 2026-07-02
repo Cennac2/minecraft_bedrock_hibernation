@@ -2,6 +2,7 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use rust_raknet::{RaknetListener, RaknetSocket};
+use std::path::Path;
 
 use crate::bds::bds_manager::{SharedChild, get_main_child, stop_bedrock_server};
 use crate::bds::console_io::handle_user_input;
@@ -24,7 +25,19 @@ Server is hibernating, join to start it up.
 ")
 }
 
+pub fn do_startup_checks() {
+    let config = get_config();
+
+    if !Path::new(&config.bedrock_file_path).exists() {
+        eprintln!("File '{}' not found.", config.bedrock_file_path);
+        panic!();
+    } 
+}
+
+
 pub async fn start_proxy() {
+    do_startup_checks();
+    
     let config = get_config();
 
     let sock_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), config.port);
