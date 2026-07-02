@@ -12,16 +12,15 @@ use crate::{bds::bds_status::is_bedrock_server_online, config_manager::{advertis
 pub fn get_startup_message() -> String {
     String::from(
 r"
-  __  __ ____  _   _
- |  \/  | __ )| | | |
- | |\/| |  _ \| |_| |
- | |  | | |_) |  _  |
- |_|  |_|____/|_| |_|
+ __  __ ____  _   _
+|  \/  | __ )| | | |
+| |\/| |  _ \| |_| |
+| |  | | |_) |  _  |
+|_|  |_|____/|_| |_|
 
- Minecraft Bedrock Hibernation
- ------------------------------
- Server is asleep. It'll wake up
- automatically when a player joins.
+Minecraft Bedrock Hibernation
+------------------------------
+Server is hibernating, join to start it up.
 ")
 }
 
