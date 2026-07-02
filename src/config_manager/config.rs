@@ -11,6 +11,7 @@ pub struct Config {
     pub version: String,
     pub hibernating_motd: String,
     pub bedrock_file_path: String,
+    pub stop_empty_server_after_seconds: u32
 }
 fn create_default_config_file(path: &str) {
     let default_config = Config {
@@ -19,7 +20,8 @@ fn create_default_config_file(path: &str) {
         protocol_version: -1,
         version: String::from("1.26.30"),
         bedrock_file_path: String::from("./bedrock_server"),
-        bedrock_server_port: 19134
+        bedrock_server_port: 19134,
+        stop_empty_server_after_seconds: 60
     };
 
     let json_str = match serde_json::to_string_pretty(&default_config) {
@@ -52,7 +54,8 @@ pub fn get_config() -> Config {
                 protocol_version: -1,
                 version: String::from("1.26.30"),
                 bedrock_file_path: String::from("./bedrock_server"),
-                bedrock_server_port: 19134
+                bedrock_server_port: 19134,
+                stop_empty_server_after_seconds: 60
             };
         }
     };
@@ -67,7 +70,8 @@ pub fn get_config() -> Config {
                 protocol_version: -1,
                 version: String::from("1.26.30"),
                 bedrock_file_path: String::from("./bedrock_server"),
-                bedrock_server_port: 19134
+                bedrock_server_port: 19134,
+                stop_empty_server_after_seconds: 60
             }
         }
     }

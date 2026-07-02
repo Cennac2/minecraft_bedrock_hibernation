@@ -1,6 +1,8 @@
-use tokio::{io::{AsyncBufReadExt, AsyncWriteExt, BufReader},process::{ChildStderr, ChildStdout}};
+use std::sync::Arc;
 
-use crate::bds::bds_manager::{start_bedrock_server, stop_bedrock_server, SharedChild};
+use tokio::{io::{AsyncBufReadExt, AsyncWriteExt, BufReader}, process::{ChildStderr, ChildStdout}, sync::Mutex};
+
+use crate::bds::bds_manager::{SharedChild, get_main_child, stop_bedrock_server};
 use crate::config_manager::config::Config;
 
 pub async fn handle_bds_output(stdout: ChildStdout) {
@@ -21,7 +23,7 @@ pub async fn handle_bds_error(stderr: ChildStderr) {
     }
 }
 
-pub async fn handle_user_input(child_state: SharedChild, config: Config) {
+pub async fn handle_user_input(child_state: SharedChild, config: Config, counter: Arc<Mutex<u32>>) {
     let reader = BufReader::new(tokio::io::stdin());
     let mut lines = reader.lines();
 
@@ -45,7 +47,8 @@ pub async fn handle_user_input(child_state: SharedChild, config: Config) {
                         println!("[MBH] Bedrock Server is already running.");
                     } else {
                         println!("[MBH] Starting Bedrock Server...");
-                        *guard = Some(start_bedrock_server(&config).await);
+                        let current = guard.take();
+                        *guard = Some(get_main_child(current, &config, Arc::clone(&counter)).await);
                     }
                 }
                 "stop" => {

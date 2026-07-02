@@ -3,7 +3,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use rust_raknet::{RaknetListener, RaknetSocket};
 
-use crate::bds::bds_manager::{get_main_child, stop_bedrock_server, SharedChild};
+use crate::bds::bds_manager::{SharedChild, get_main_child, stop_bedrock_server};
 use crate::bds::console_io::handle_user_input;
 use crate::bds::proxy_connector::proxy_connection;
 use crate::config_manager::config::Config;
@@ -52,14 +52,17 @@ pub async fn start_proxy() {
         handle_exit(shutdown_child_state).await;
     });
 
+    let clients_amount: Arc<Mutex<u32>> = Arc::new(Mutex::new(0));
+
     let console_child_state = child_state.clone();
     let console_config = config.clone();
+    let console_clients_amount = Arc::clone(&clients_amount);
     tokio::spawn(async move {
-        handle_user_input(console_child_state, console_config).await;
+        handle_user_input(console_child_state, console_config, console_clients_amount).await;
     });
 
     tokio::task::spawn(handle_status());
-    proxy_handle_connections(server, config, child_state).await;
+    proxy_handle_connections(server, config, child_state, Arc::clone(&clients_amount)).await;
 }
 
 async fn handle_exit(shutdown_child: SharedChild) {
@@ -102,7 +105,7 @@ async fn handle_status() {
     }
 }
 
-pub async fn proxy_handle_connections(mut server: RaknetListener, config: Config, child_state: SharedChild) {
+pub async fn proxy_handle_connections(mut server: RaknetListener, config: Config, child_state: SharedChild, clients_amount: Arc<Mutex<u32>>) {
     let mut raknet_version: Option<u8> = None;
     loop {
         let conn = server.accept().await;
@@ -118,7 +121,7 @@ pub async fn proxy_handle_connections(mut server: RaknetListener, config: Config
                         {
                             let mut guard = child_state.lock().await;
                             let current = guard.take();
-                            *guard = Some(get_main_child(current, &config).await);
+                            *guard = Some(get_main_child(current, &config, Arc::clone(&clients_amount)).await);
                         }
                         
                         // TODO: Make Server kick player and display a message.
@@ -154,7 +157,7 @@ pub async fn proxy_handle_connections(mut server: RaknetListener, config: Config
                             .await
                             .unwrap();
 
-                        tokio::spawn(proxy_connection(c, bds_client));
+                        tokio::spawn(proxy_connection(c, bds_client, Arc::clone(&clients_amount)));
                     }
                 }
             },

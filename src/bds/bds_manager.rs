@@ -1,5 +1,6 @@
 use std::net::Ipv4Addr;
 use std::process::Stdio;
+use std::time::Duration;
 use tokio::process::{Child, Command};
 use tokio::io::AsyncWriteExt;
 use tokio::task::JoinHandle;
@@ -18,7 +19,7 @@ pub struct BedrockServer {
 
 pub type SharedChild = Arc<Mutex<Option<Arc<Mutex<BedrockServer>>>>>;
 
-pub async fn start_bedrock_server(config: &Config) -> Arc<Mutex<BedrockServer>> {
+pub async fn start_bedrock_server(config: &Config, counter: Arc<Mutex<u32>>) -> Arc<Mutex<BedrockServer>> {
     update_bedrock_server_port(config.bedrock_server_port);
     println!("Running bedrock server file.");
     let mut child = match Command::new(&config.bedrock_file_path)
@@ -51,7 +52,39 @@ pub async fn start_bedrock_server(config: &Config) -> Arc<Mutex<BedrockServer>> 
         stderr_handle,
     }));
 
+    start_should_hibernate_check_loop(
+        Arc::clone(&server),
+        config.stop_empty_server_after_seconds,
+        counter,
+    ).await;
+
     server
+}
+
+pub async fn start_should_hibernate_check_loop(
+    server: Arc<Mutex<BedrockServer>>,
+    duration: u32,
+    counter: Arc<Mutex<u32>>,
+) {
+    loop {
+        let mut clients_amount = *counter.lock().await;
+
+        if clients_amount == 0 {
+            tokio::time::sleep(Duration::from_secs(duration as u64)).await;
+
+            clients_amount = *counter.lock().await;
+
+            if clients_amount == 0 {
+                println!("[MBH] No players connected for {} seconds, stopping server..", duration);
+
+                let mut guard = server.lock().await;
+                stop_bedrock_server(&mut guard).await;
+                break;
+            }
+        } else {
+            tokio::time::sleep(Duration::from_secs(1)).await;
+        }
+    }
 }
 
 fn update_bedrock_server_port(port: u16) {
@@ -93,7 +126,7 @@ fn update_bedrock_server_port(port: u16) {
     }
 }
 
-pub async fn get_main_child(mut server: Option<Arc<Mutex<BedrockServer>>>, config: &Config) -> Arc<Mutex<BedrockServer>> {
+pub async fn get_main_child(mut server: Option<Arc<Mutex<BedrockServer>>>, config: &Config, counter: Arc<Mutex<u32>>) -> Arc<Mutex<BedrockServer>> {
     let server_online = is_bedrock_server_online(Ipv4Addr::LOCALHOST, config.bedrock_server_port, 1).await;
 
     let is_active = match &mut server {
@@ -109,7 +142,7 @@ pub async fn get_main_child(mut server: Option<Arc<Mutex<BedrockServer>>>, confi
         server.unwrap()
     } else {
         println!("[MBH] Starting up Bedrock Server!");
-        start_bedrock_server(config).await
+        start_bedrock_server(config, counter).await
     }
 }
 
