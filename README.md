@@ -40,7 +40,8 @@ directory:
   "protocol_version": -1,
   "version": "1.26.30",
   "hibernating_motd": "Server is Hibernating",
-  "bedrock_file_path": "./bedrock_server"
+  "bedrock_file_path": "./bedrock_server",
+  "stop_empty_server_after_seconds": 60
 }
 ```
 
