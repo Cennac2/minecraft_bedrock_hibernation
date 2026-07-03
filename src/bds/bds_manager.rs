@@ -7,6 +7,8 @@ use tokio::io::AsyncWriteExt;
 use tokio::task::JoinHandle;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+#[cfg(windows)]
+const CREATE_NEW_PROCESS_GROUP: u32 = 0x00000200;
 
 use crate::bds::bds_status::is_bedrock_server_online;
 use crate::bds::console_io::{handle_bds_error, handle_bds_output};
@@ -36,18 +38,21 @@ pub async fn start_bedrock_server(config: &Config, counter: Arc<Mutex<u32>>) -> 
 
     println!("bedrock dir: {}", bedrock_dir.to_str().unwrap());
 
-    let mut child = match Command::new(&bedrock_path)
+    let mut command = Command::new(&bedrock_path);
+    command
         .current_dir(bedrock_dir)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn() {
-            Ok(child) => child,
-            Err(e) => {
-                eprintln!("{:?}", e);
-                panic!();
-            }
-        };
+        .stderr(Stdio::piped());
+    
+
+    let mut child = match command.spawn() {
+        Ok(child) => child,
+        Err(e) => {
+            eprintln!("{:?}", e);
+            panic!();
+        }
+    };
 
     let stdout_handle = child.stdout.take().map(|stdout| {
         tokio::spawn(async move {
@@ -219,8 +224,7 @@ pub async fn stop_bedrock_server(server: &mut BedrockServer) {
             Ok(_) => {
                 let _ = stdin.flush().await;
             }
-            Err(e) => {
-                eprintln!("[MBH] Failed to write stop command: {:?}, killing instead", e);
+            Err(_) => {
                 let _ = server.child.start_kill();
             }
         }

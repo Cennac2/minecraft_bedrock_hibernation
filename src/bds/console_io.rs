@@ -60,6 +60,18 @@ pub async fn handle_user_input(child_state: SharedChild, config: Config, counter
                         None => println!("[MBH] No running Bedrock Server to stop."),
                     }
                 },
+                "exit" => {
+                    let guard = child_state.lock().await;
+                    if let Some(server) = guard.as_ref() {
+                        let mut server = server.lock().await;
+                        stop_bedrock_server(&mut *server).await;
+                    } else {
+                        println!("[MBH] No running Bedrock Server to stop.");
+                    }
+
+                    println!("[MBH] Shutdown complete.");
+                    std::process::exit(0);
+                }
                 "help" | _ => println!("[MBH] MBH commands: help, start, stop"),
             }
         } else {
