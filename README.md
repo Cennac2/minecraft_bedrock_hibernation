@@ -18,6 +18,98 @@ the connection through.
 - A Minecraft Bedrock Dedicated Server (BDS) binary, downloaded separately
   from [minecraft.net](https://www.minecraft.net/en-us/download/server/bedrock)
 
+## Installation
+
+### 1. Download a Bedrock Dedicated Server
+
+Download the latest Bedrock Dedicated Server from:
+
+https://www.minecraft.net/en-us/download/server/bedrock
+
+Extract it somewhere convenient, for example:
+
+```text
+C:\bedrock_server
+```
+
+or
+
+```text
+/home/user/bedrock_server
+```
+
+### 2. Download or build `mbh`
+
+Either download a release from GitHub or build it yourself using the command below:
+
+```bash
+git clone https://github.com/Cennac2/minecraft_bedrock_hibernation.git
+cd minecraft_bedrock_hibernation
+cargo build --release
+```
+
+The executable will be located at:
+
+```text
+target/release/minecraft_bedrock_hibernation
+```
+
+### 3. Place the executable
+
+You can place `minecraft_bedrock_hibernation` anywhere. It does **not** need to
+be inside your Bedrock server directory.
+
+### 4. Run `mbh` once
+
+Start the program:
+
+```bash
+./minecraft_bedrock_hibernation
+```
+
+On first launch it creates a default `mbh_config.json` in the current working
+directory.
+
+### 5. Configure `mbh`
+
+Open `mbh_config.json` and set:
+
+- `bedrock_file_path` to the Bedrock server executable.
+- `port` to the port you want players to use for joining.
+- `bedrock_server_port` to a port different from `port`.
+
+(Full config file can be found below)
+
+Example:
+
+**Windows**
+
+```json
+{
+  "bedrock_file_path": "C:/bedrock_server/bedrock_server.exe"
+}
+```
+
+**Linux**
+
+```json
+{
+  "bedrock_file_path": "/home/user/bedrock_server/bedrock_server"
+}
+```
+
+### 6. Start `mbh`
+
+Run:
+
+```bash
+./minecraft_bedrock_hibernation
+```
+
+Players should now connect to the proxy port (`port`), while the Bedrock server
+runs internally on `bedrock_server_port`. The server will automatically start
+when someone joins and stop after being idle for the configured amount of time.
+
 ## Building
 
 ```bash
@@ -80,9 +172,9 @@ automatically. You can also control it manually from the console:
 Contributions are welcome! If you'd like to help out:
 
 1. Fork the repo and add your changes to dev branch
-3. Make sure `cargo check` and `cargo build` run clean with no warnings
-4. Keep changes focused smaller, single-purpose PRs are easier to review
-5. Open a pull request describing what you changed and
+2. Make sure `cargo check` and `cargo build` run clean with no warnings
+3. Keep changes focused smaller, single-purpose PRs are easier to review
+4. Open a pull request describing what you changed and
 
 ## TODO
 
