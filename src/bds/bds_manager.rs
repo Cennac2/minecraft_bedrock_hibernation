@@ -1,4 +1,5 @@
 use std::net::Ipv4Addr;
+use std::path::Path;
 use std::process::Stdio;
 use std::time::Duration;
 use tokio::process::{Child, Command};
@@ -21,9 +22,21 @@ pub struct BedrockServer {
 pub type SharedChild = Arc<Mutex<Option<Arc<Mutex<BedrockServer>>>>>;
 
 pub async fn start_bedrock_server(config: &Config, counter: Arc<Mutex<u32>>) -> Arc<Mutex<BedrockServer>> {
-    update_bedrock_server_port(config.bedrock_server_port);
+    update_bedrock_server_port(config.bedrock_server_port, config.clone());
     println!("Running bedrock server file.");
-    let mut child = match Command::new(&config.bedrock_file_path)
+
+    let bedrock_path = Path::new(&config.bedrock_file_path)
+        .canonicalize()
+        .expect("bedrock_file_path should exist and be resolvable");
+
+    let bedrock_dir = bedrock_path
+        .parent()
+        .expect("bedrock_file_path should have a parent directory");
+
+    println!("bedrock dir: {}", bedrock_dir.to_str().unwrap());
+
+    let mut child = match Command::new(&bedrock_path)
+        .current_dir(bedrock_dir)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -95,14 +108,20 @@ pub async fn start_should_hibernate_check_loop(
     }
 }
 
-fn update_bedrock_server_port(port: u16) {
+fn update_bedrock_server_port(port: u16, config: Config) {
     println!("Updating server port to {port}");
 
-    let path = "server.properties";
+    let bedrock_path = Path::new(&config.bedrock_file_path);
+    
+    let bedrock_dir = bedrock_path
+        .parent()
+        .expect("bedrock_file_path should have a parent directory");
+
+    let path = bedrock_dir.join("server.properties");
     let key = "server-port";
     let new_value = port.to_string();
     
-    let contents = std::fs::read_to_string(path).unwrap_or_default();
+    let contents = std::fs::read_to_string(path.clone()).unwrap_or_default();
     let mut lines: Vec<String> = contents.lines().map(String::from).collect();
     let mut found = false;
 
