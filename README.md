@@ -89,7 +89,6 @@ discuss the approach before putting in the work.
 ## TODO
 
 - [ ] Display a kick message when a player joins while the server is hibernating.
-- [ ] Update the server MOTD when the server is online.
 
 ## License
 
