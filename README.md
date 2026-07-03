@@ -79,13 +79,10 @@ automatically. You can also control it manually from the console:
 
 Contributions are welcome! If you'd like to help out:
 
-1. Fork the repo and create a branch for your change
-2. Make sure `cargo check` and `cargo build` run clean with no warnings
-3. Keep changes focused smaller, single-purpose PRs are easier to review
-4. Open a pull request describing what you changed and why
-
-If you're planning a bigger change, feel free to open an issue first to
-discuss the approach before putting in the work.
+1. Fork the repo and add your changes to dev branch
+3. Make sure `cargo check` and `cargo build` run clean with no warnings
+4. Keep changes focused smaller, single-purpose PRs are easier to review
+5. Open a pull request describing what you changed and
 
 ## TODO
 
