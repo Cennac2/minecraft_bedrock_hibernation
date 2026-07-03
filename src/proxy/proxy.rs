@@ -72,9 +72,7 @@ pub async fn start_hibernating_proxy() {
     let child_state: SharedChild = Arc::new(Mutex::new(None));
 
     let shutdown_child_state = child_state.clone();
-    tokio::spawn(async move {
-        handle_exit(shutdown_child_state).await;
-    });
+    tokio::spawn(handle_exit(shutdown_child_state));
 
     let clients_amount: Arc<Mutex<u32>> = Arc::new(Mutex::new(0));
 
@@ -111,21 +109,11 @@ async fn send_startup_message_if_offline(config: Config) {
 }
 
 async fn update_server_motd(motd_handle: Arc<RwLock<String>>, config: Config, hibernating_motd: String) {
-    let mut was_online = false;
 
     loop {
         let server_motd = get_bedrock_server_motd(Ipv4Addr::LOCALHOST, config.bedrock_server_port).await;
-        let online = !server_motd.is_empty();
 
-        // Print the startup message whenever server goes offline.
-        // Its kind of not supposed to be here because it has nothing
-        // to do with motd but eh.
-        if !online && was_online {
-            println!("{}", get_startup_message());
-        }
-
-        was_online = online;
-        if online {
+        if server_motd.is_empty() {
             *motd_handle.write().await = hibernating_motd.clone();
         } else {
             *motd_handle.write().await = server_motd;
@@ -174,10 +162,8 @@ pub async fn proxy_handle_connections(shared_server: Arc<Mutex<RaknetListener>>,
                             let current = guard.take();
                             *guard = Some(get_main_child(current, &config, Arc::clone(&clients_amount)).await);
                         }
-                        
-                        // TODO: Make Server kick player and display a message.
-                        c.close().await.unwrap();
-                    } else {
+                    } 
+                    {
                         let bds_addr = &SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), config.bedrock_server_port);
 
                         if raknet_version == None {

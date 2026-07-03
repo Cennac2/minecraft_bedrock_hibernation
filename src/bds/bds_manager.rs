@@ -219,8 +219,8 @@ pub async fn stop_bedrock_server(server: &mut BedrockServer) {
             Ok(_) => {
                 let _ = stdin.flush().await;
             }
-            Err(_) => {
-                // eprintln!("[MBH] Failed to write stop command: {:?}, killing instead", e);
+            Err(e) => {
+                eprintln!("[MBH] Failed to write stop command: {:?}, killing instead", e);
                 let _ = server.child.start_kill();
             }
         }

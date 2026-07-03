@@ -1,4 +1,4 @@
-use crate::{bds::protocol_versions::get_protocol_version, config_manager::config::Config};
+use crate::{bds::protocol::get_protocol_version, config_manager::config::Config};
 
 #[allow(dead_code)]
 pub enum Gamemode {
