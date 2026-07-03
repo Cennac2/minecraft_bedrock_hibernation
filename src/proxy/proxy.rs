@@ -1,3 +1,4 @@
+use std::io::stdout;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 use std::time::Duration;
@@ -5,6 +6,7 @@ use rust_raknet::error::RaknetError;
 use tokio::sync::{Mutex, RwLock};
 use rust_raknet::{RaknetListener, RaknetSocket};
 use std::path::Path;
+use crossterm::{execute, terminal::{Clear, ClearType}};
 
 use crate::bds::bds_manager::{SharedChild, get_main_child, stop_bedrock_server};
 use crate::bds::bds_status::get_bedrock_server_motd;
@@ -85,10 +87,27 @@ pub async fn start_hibernating_proxy() {
         let server = shared_server.lock().await;
         server.motd_handle()
     };
+    tokio::spawn(update_server_motd(motd_handle, config.clone(), default_motd));
 
-    tokio::task::spawn(update_server_motd(motd_handle, config.clone(), default_motd));
+    tokio::spawn(send_startup_message_if_offline(config.clone()));
 
     proxy_handle_connections(shared_server, config, child_state, Arc::clone(&clients_amount)).await;
+}
+
+async fn send_startup_message_if_offline(config: Config) {
+    let mut was_online = false;
+
+    loop {
+        let online = is_bedrock_server_online(Ipv4Addr::LOCALHOST, config.bedrock_server_port, 1).await;
+        if !online && was_online {
+            execute!(stdout(), Clear(ClearType::All)).unwrap();
+            println!("{}", get_startup_message());
+        }
+
+        was_online = online;
+
+        tokio::time::sleep(Duration::from_secs(1)).await;
+    }
 }
 
 async fn update_server_motd(motd_handle: Arc<RwLock<String>>, config: Config, hibernating_motd: String) {
@@ -165,6 +184,7 @@ pub async fn proxy_handle_connections(shared_server: Arc<Mutex<RaknetListener>>,
                             for version in 0..=20 {
                                 match RaknetSocket::connect_with_version(&bds_addr, version).await {
                                     Ok(_) => {
+                                        println!("");
                                         println!("[MBH] Worked with version {}", version);
                                         raknet_version = Some(version);
                                         break;
@@ -175,7 +195,7 @@ pub async fn proxy_handle_connections(shared_server: Arc<Mutex<RaknetListener>>,
                         }
 
                         let bds_client = match RaknetSocket::connect_with_version(
-                            &SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), config.bedrock_server_port), raknet_version.unwrap()
+                            bds_addr, raknet_version.unwrap()
                         ).await {
                             Ok(s) => s,
                             Err(e) => {
