@@ -16,7 +16,8 @@ pub struct BedrockServer {
     pub child: Child,
     stdout_handle: Option<JoinHandle<()>>,
     stderr_handle: Option<JoinHandle<()>>,
-    hibernate_handle: Option<JoinHandle<()>>
+    hibernate_handle: Option<JoinHandle<()>>,
+    manually_killed: bool
 }
 
 pub type SharedChild = Arc<Mutex<Option<Arc<Mutex<BedrockServer>>>>>;
@@ -64,10 +65,11 @@ pub async fn start_bedrock_server(config: &Config, counter: Arc<Mutex<u32>>) -> 
         child,
         stdout_handle,
         stderr_handle,
-        hibernate_handle: None
+        hibernate_handle: None,
+        manually_killed: false
     }));
 
-    let hibernate_handle = tokio::spawn(start_should_hibernate_check_loop(
+    let hibernate_handle = tokio::spawn(check_should_hibernate_check(
         Arc::clone(&server),
         config.stop_empty_server_after_seconds,
         counter,
@@ -81,30 +83,62 @@ pub async fn start_bedrock_server(config: &Config, counter: Arc<Mutex<u32>>) -> 
     server
 }
 
-pub async fn start_should_hibernate_check_loop(
+pub async fn check_should_hibernate_check(
     server: Arc<Mutex<BedrockServer>>,
     duration: u32,
     counter: Arc<Mutex<u32>>,
 ) {
+    let mut idle_seconds: u32 = 0;
+
     loop {
-        let mut clients_amount = *counter.lock().await;
+        {
+            let mut guard = server.lock().await;
+
+            match guard.child.try_wait() {
+                Ok(Some(status)) => {
+                    if !guard.manually_killed {
+                        eprintln!("[MBH] Server exited unexpectedly! (exit: {})", status);
+                        
+                        stop_bedrock_server(&mut guard).await;
+                    }
+                    break;
+                }
+                Ok(None) => {}
+                Err(e) => {
+                    eprintln!("[MBH] Error checking child status: {:?}", e);
+                    guard.hibernate_handle.take();
+                    break;
+                }
+            }
+        }
+
+        let clients_amount = *counter.lock().await;
 
         if clients_amount == 0 {
-            tokio::time::sleep(Duration::from_secs(duration as u64)).await;
+            idle_seconds += 1;
 
-            clients_amount = *counter.lock().await;
+            if idle_seconds >= duration {
+                let clients_amount_recheck = *counter.lock().await;
 
-            if clients_amount == 0 {
-                println!("[MBH] No players connected for {} seconds, stopping server..", duration);
-                
-                let mut guard = server.lock().await;
-                guard.hibernate_handle.take();
-                stop_bedrock_server(&mut guard).await;
-                break;
+                if clients_amount_recheck == 0 {
+                    println!(
+                        "[MBH] No players connected for {} seconds, stopping server..",
+                        duration
+                    );
+
+                    let mut guard = server.lock().await;
+                    guard.hibernate_handle.take();
+                    stop_bedrock_server(&mut guard).await;
+                    break;
+                } else {
+                    idle_seconds = 0;
+                }
             }
         } else {
-            tokio::time::sleep(Duration::from_secs(1)).await;
+            idle_seconds = 0;
         }
+
+        tokio::time::sleep(Duration::from_secs(1)).await;
     }
 }
 
@@ -174,21 +208,27 @@ pub async fn get_main_child(mut server: Option<Arc<Mutex<BedrockServer>>>, confi
 }
 
 pub async fn stop_bedrock_server(server: &mut BedrockServer) {
+    server.manually_killed = true;
+
     if let Some(handle) = server.hibernate_handle.take() {
         handle.abort();
     }
 
     if let Some(stdin) = server.child.stdin.as_mut() {
-        if let Err(e) = stdin.write_all(b"stop\n").await {
-            eprintln!("[MBH] Failed to write stop command: {:?}", e);
+        match stdin.write_all(b"stop\n").await {
+            Ok(_) => {
+                let _ = stdin.flush().await;
+            }
+            Err(_) => {
+                // eprintln!("[MBH] Failed to write stop command: {:?}, killing instead", e);
+                let _ = server.child.start_kill();
+            }
         }
-        let _ = stdin.flush().await;
     } else {
-        eprintln!("[MBH] No stdin handle for Bedrock Server, killing instead.");
+        eprintln!("[MBH] Killing server due to invalid stdin handle.");
         let _ = server.child.start_kill();
     }
-
-    println!("[MBH] Waiting for Bedrock Server to exit...");
+    
     match server.child.wait().await {
         Ok(_) => {},
         Err(e) => eprintln!("[MBH] Error while waiting for Bedrock Server to exit: {:?}", e),
