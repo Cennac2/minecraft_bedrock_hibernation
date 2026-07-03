@@ -45,14 +45,15 @@ directory:
 }
 ```
 
-| Field                  | Description                                                                               |
-|------------------------|-------------------------------------------------------------------------------------------|
-| `port`                 | The public port players connect to (proxy's listening port)                               |
-| `bedrock_server_port`  | The port the real Bedrock server runs on internally (should NOT be equal to proxy's port) |
-| `protocol_version`     | Bedrock protocol version to advertise; set to `-1` to auto-detect from `version`          |
-| `version`              | Minecraft Bedrock version string shown in the server list and used for protocol version   |
-| `hibernating_motd`     | Message shown while the server is asleep                                                  |
-| `bedrock_file_path`    | Path to your Bedrock server executable                                                    |
+| Field                  | Description                                                                                          |
+|------------------------|------------------------------------------------------------------------------------------------------|
+| `port`                            | The public port players connect to (proxy's listening port)                               |
+| `bedrock_server_port`             | The port the real Bedrock server runs on internally (should NOT be equal to proxy's port) |
+| `protocol_version`                | Bedrock protocol version to advertise; set to `-1` to auto-detect from `version`          |
+| `version`                         | Minecraft Bedrock version string shown in the server list and used for protocol version   |
+| `hibernating_motd`                | Message shown while the server is asleep                                                  |
+| `bedrock_file_path`               | Path to your Bedrock server executable                                                    |
+| `stop_empty_server_after_seconds` | How long the server will wait before stopping if there are no players                     |
 
 Edit the file to point `bedrock_file_path` at your actual server binary, then
 restart `minecraft_bedrock_hibernation`.
@@ -68,7 +69,7 @@ on first startup.
 Players connecting while the server is asleep will trigger it to start
 automatically. You can also control it manually from the console:
 
-| Command     | Description                                |
+| Command     | Description                                 |
 |-------------|---------------------------------------------|
 | `mbh start` | Start the Bedrock server if it's offline    |
 | `mbh stop`  | Stop the Bedrock server if it's running     |
