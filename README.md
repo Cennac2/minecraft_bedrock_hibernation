@@ -171,7 +171,7 @@ automatically. You can also control it manually from the console:
 
 Contributions are welcome! If you'd like to help out:
 
-1. Fork the repo and add your changes to dev branch
+1. Fork the repo and add your changes to a new branch
 2. Make sure `cargo check` and `cargo build` run clean with no warnings
 3. Keep changes focused smaller, single-purpose PRs are easier to review
 4. Open a pull request describing what you changed and
