@@ -1,0 +1,74 @@
+{
+    "_comment": "DO NOT EDIT: FILE GENERATED AUTOMATICALLY BY PTERODACTYL PANEL - PTERODACTYL.IO",
+    "meta": {
+        "version": "PTDL_v2",
+        "update_url": null
+    },
+    "exported_at": "2026-07-03T00:39:29+02:00",
+    "name": "MBH Bedrock",
+    "author": "cennacdude@proton.me",
+    "description": "A lightweight hibernation proxy for Minecraft Bedrock servers. Sits in front of your Bedrock server and keeps it shut down while idle, automatically starting it the moment a player tries to connect saving resources without requiring players to do anything special to join.",
+    "features": [
+        "pid_limit"
+    ],
+    "docker_images": {
+        "ghcr.io\/ptero-eggs\/yolks:debian": "ghcr.io\/ptero-eggs\/yolks:debian"
+    },
+    "file_denylist": [],
+    "startup": ".\/mbh",
+    "config": {
+        "files": "{\r\n    \"mbh_config.json\": {\r\n        \"parser\": \"json\",\r\n        \"find\": {\r\n            \"port\": \"{{server.build.default.port}}\",\r\n            \"stop_empty_server_after_seconds\": \"{{server.build.env.TIME_STOP}}\",\r\n            \"hibernating_motd\": \"{{server.build.env.MOTD}}\"\r\n        }\r\n    }\r\n}",
+        "startup": "{\r\n    \"done\": \"Server is hibernating, join to start it up.\"\r\n}",
+        "logs": "{}",
+        "stop": "mbh exit"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!\/bin\/bash\r\nset -euo pipefail\r\n\r\napt update\r\napt install -y zip unzip wget curl jq\r\n\r\ncd \/mnt\/server || { echo \"Failed to change directory to \/mnt\/server\"; exit 1; }\r\n\r\n# Backup config files before install\r\necho \"Backing up config files\"\r\nmkdir -p \/tmp\/config_backup\r\ncp -v server.properties \/tmp\/config_backup\/ 2>\/dev\/null || true\r\ncp -v permissions.json \/tmp\/config_backup\/ 2>\/dev\/null || true\r\ncp -v allowlist.json \/tmp\/config_backup\/ 2>\/dev\/null || true\r\ncp -v mbh_config.json \/tmp\/config_backup\/ 2>\/dev\/null || true\r\n\r\necho \"Finding latest MBH release asset from GitHub\"\r\nAPI_URL=\"https:\/\/api.github.com\/repos\/Cennac2\/minecraft_bedrock_hibernation\/releases\/latest\"\r\n\r\nDOWNLOAD_URL=$(curl -fsSL \"$API_URL\" | jq -r '.assets[] | select(.name == \"mbh-linux-x86_64\") | .browser_download_url')\r\n\r\nif [ -z \"${DOWNLOAD_URL}\" ] || [ \"${DOWNLOAD_URL}\" = \"null\" ]; then\r\n    echo \"Failed to find asset mbh-linux-x86_64 in the latest release.\"\r\n    exit 1\r\nfi\r\n\r\necho \"Downloading MBH from: $DOWNLOAD_URL\"\r\ncurl -fsSL -L -o mbh-linux-x86_64 \"$DOWNLOAD_URL\"\r\n\r\necho \"Renaming binary to mbh\"\r\nmv -f mbh-linux-x86_64 mbh\r\nchmod +x mbh\r\n\r\necho \"Installing Bedrock server\"\r\nRANDVERSION=$(echo $((1 + $RANDOM % 4000)))\r\nBEDROCK_VERSION=${BEDROCK_VERSION:-latest}\r\nDOWNLOAD_FILE=\"bedrock-server-installer.zip\"\r\n\r\nif [ \"${BEDROCK_VERSION}\" = \"latest\" ]; then\r\n    echo \"Finding latest Bedrock server version\"\r\n    DOWNLOAD_URL=$(curl --silent https:\/\/net-secondary.web.minecraft-services.net\/api\/v1.0\/download\/links | jq -r '.result.links[] | select(.downloadType == \"serverBedrockLinux\") | .downloadUrl')\r\n    if [ -z \"${DOWNLOAD_URL}\" ] || [ \"${DOWNLOAD_URL}\" = \"null\" ]; then\r\n        echo \"Failed to retrieve the latest Bedrock server version.\"\r\n        exit 1\r\n    fi\r\nelse\r\n    echo \"Downloading ${BEDROCK_VERSION} Bedrock server\"\r\n    DOWNLOAD_URL=\"https:\/\/www.minecraft.net\/bedrockdedicatedserver\/bin-linux\/bedrock-server-${BEDROCK_VERSION}.zip\"\r\nfi\r\n\r\necho \"Download URL: $DOWNLOAD_URL\"\r\n\r\ncurl -fsSL -L \\\r\n  -A \"Mozilla\/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit\/537.36 (KHTML, like Gecko) Chrome\/90.0.${RANDVERSION}.212 Safari\/537.36\" \\\r\n  -H \"Accept-Language: en\" \\\r\n  -o \"${DOWNLOAD_FILE}\" \\\r\n  \"${DOWNLOAD_URL}\"\r\n\r\necho \"Unpacking server files\"\r\nunzip -o \"${DOWNLOAD_FILE}\"\r\n\r\necho \"Cleaning up after installing\"\r\nrm -f \"${DOWNLOAD_FILE}\"\r\n\r\necho \"Restoring backup config files\"\r\ncp -rfv \/tmp\/config_backup\/* \/mnt\/server\/ 2>\/dev\/null || echo \"No files to restore\"\r\n\r\nchmod +x bedrock_server\r\n\r\necho \"Install Completed\"",
+            "container": "ghcr.io\/ptero-eggs\/installers:debian",
+            "entrypoint": "bash"
+        }
+    },
+    "variables": [
+        {
+            "name": "Bedrock Version",
+            "description": "The version of bedrock. (Ex. 1.7.0.13)\r\n\r\nDefault version is latest.",
+            "env_variable": "BEDROCK_VERSION",
+            "default_value": "latest",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:20",
+            "field_type": "text"
+        },
+        {
+            "name": "ld lib path",
+            "description": "Dumb reasons to need this",
+            "env_variable": "LD_LIBRARY_PATH",
+            "default_value": ".",
+            "user_viewable": false,
+            "user_editable": false,
+            "rules": "required|string|max:20",
+            "field_type": "text"
+        },
+        {
+            "name": "Wait time before shutdown (seconds)",
+            "description": "The amount of time the server should wait before the server goes offline because of inactivity",
+            "env_variable": "TIME_STOP",
+            "default_value": "60",
+            "user_viewable": true,
+            "user_editable": false,
+            "rules": "required|integer|between:0,60000",
+            "field_type": "text"
+        },
+        {
+            "name": "Server Hibernating motd",
+            "description": "What to display when the server is hibernating",
+            "env_variable": "MOTD",
+            "default_value": "Server is Hibernating",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string",
+            "field_type": "text"
+        }
+    ]
+}
