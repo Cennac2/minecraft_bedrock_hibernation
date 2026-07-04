@@ -21,6 +21,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Upload Pterodactyl egg
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ptero-egg/mbh-pterodactyl-egg.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build:
     needs: create-release
     strategy:
@@ -34,14 +41,6 @@ jobs:
             target: x86_64-pc-windows-msvc
             artifact_name: minecraft_bedrock_hibernation.exe
             asset_name: mbh-windows-x86_64.exe
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            artifact_name: minecraft_bedrock_hibernation
-            asset_name: mbh-macos-x86_64
-          - os: macos-latest
-            target: aarch64-apple-darwin
-            artifact_name: minecraft_bedrock_hibernation
-            asset_name: mbh-macos-aarch64
 
     runs-on: ${{ matrix.os }}
 
