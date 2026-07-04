@@ -176,10 +176,6 @@ Contributions are welcome! If you'd like to help out:
 3. Keep changes focused smaller, single-purpose PRs are easier to review
 4. Open a pull request describing what you changed and
 
-## TODO
-
-- [ ] Display a kick message when a player joins while the server is hibernating.
-
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
