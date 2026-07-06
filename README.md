@@ -166,7 +166,7 @@ automatically. You can also control it manually from the console:
 | `mbh start` | Start the Bedrock server if it's offline     |
 | `mbh stop`  | Stop the Bedrock server if it's running      |
 | `mbh help`  | List available commands                      |
-| `mbh exit`  | Fully stop mbh (run this instead of ctrl + C |
+| `mbh exit`  | Fully stop mbh (run this instead of ctrl + C) |
 
 ## Contributing
 
