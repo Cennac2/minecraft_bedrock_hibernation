@@ -7,8 +7,6 @@ use tokio::io::AsyncWriteExt;
 use tokio::task::JoinHandle;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-#[cfg(windows)]
-const CREATE_NEW_PROCESS_GROUP: u32 = 0x00000200;
 
 use crate::bds::bds_status::is_bedrock_server_online;
 use crate::bds::console_io::{handle_bds_error, handle_bds_output};
