@@ -86,7 +86,7 @@ Example:
 
 ```json
 {
-  "bedrock_file_path": "C:/bedrock_server/bedrock_server.exe"
+  "bedrock_file_path": "./bedrock_server.exe"
 }
 ```
 
@@ -94,7 +94,7 @@ Example:
 
 ```json
 {
-  "bedrock_file_path": "/home/user/bedrock_server/bedrock_server"
+  "bedrock_file_path": "./bedrock_server"
 }
 ```
 
