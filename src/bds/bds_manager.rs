@@ -74,7 +74,7 @@ pub async fn start_bedrock_server(config: &Config, counter: Arc<Mutex<u32>>) -> 
 
     let hibernate_handle = tokio::spawn(check_should_hibernate_check(
         Arc::clone(&server),
-        config.stop_empty_server_after_seconds,
+        config.clone(),
         counter,
     ));
 
@@ -88,8 +88,8 @@ pub async fn start_bedrock_server(config: &Config, counter: Arc<Mutex<u32>>) -> 
 
 pub async fn check_should_hibernate_check(
     server: Arc<Mutex<BedrockServer>>,
-    duration: u32,
-    counter: Arc<Mutex<u32>>,
+    config: Config,
+    counter: Arc<Mutex<u32>>
 ) {
     let mut idle_seconds: u32 = 0;
 
@@ -117,28 +117,32 @@ pub async fn check_should_hibernate_check(
 
         let clients_amount = *counter.lock().await;
 
-        if clients_amount == 0 {
-            idle_seconds += 1;
+        let server_online = is_bedrock_server_online(Ipv4Addr::LOCALHOST, config.bedrock_server_port, 1).await;
 
-            if idle_seconds >= duration {
-                let clients_amount_recheck = *counter.lock().await;
+        if server_online {
+            if clients_amount == 0 {
+                idle_seconds += 1;
 
-                if clients_amount_recheck == 0 {
-                    println!(
-                        "[MBH] No players connected for {} seconds, stopping server..",
-                        duration
-                    );
+                if idle_seconds >= config.stop_empty_server_after_seconds {
+                    let clients_amount_recheck = *counter.lock().await;
 
-                    let mut guard = server.lock().await;
-                    guard.hibernate_handle.take();
-                    stop_bedrock_server(&mut guard).await;
-                    break;
-                } else {
-                    idle_seconds = 0;
+                    if clients_amount_recheck == 0 {
+                        println!(
+                            "[MBH] No players connected for {} seconds, stopping server..",
+                            config.stop_empty_server_after_seconds
+                        );
+
+                        let mut guard = server.lock().await;
+                        guard.hibernate_handle.take();
+                        stop_bedrock_server(&mut guard).await;
+                        break;
+                    } else {
+                        idle_seconds = 0;
+                    }
                 }
+            } else {
+                idle_seconds = 0;
             }
-        } else {
-            idle_seconds = 0;
         }
 
         tokio::time::sleep(Duration::from_secs(1)).await;
