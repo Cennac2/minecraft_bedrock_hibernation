@@ -86,7 +86,7 @@ Example:
 
 ```json
 {
-  "bedrock_file_path": "C:/bedrock_server/bedrock_server.exe"
+  "bedrock_file_path": "./bedrock_server.exe"
 }
 ```
 
@@ -94,7 +94,7 @@ Example:
 
 ```json
 {
-  "bedrock_file_path": "/home/user/bedrock_server/bedrock_server"
+  "bedrock_file_path": "./bedrock_server"
 }
 ```
 
@@ -161,11 +161,12 @@ on first startup.
 Players connecting while the server is asleep will trigger it to start
 automatically. You can also control it manually from the console:
 
-| Command     | Description                                 |
-|-------------|---------------------------------------------|
-| `mbh start` | Start the Bedrock server if it's offline    |
-| `mbh stop`  | Stop the Bedrock server if it's running     |
-| `mbh help`  | List available commands                     |
+| Command     | Description                                  |
+|-------------|----------------------------------------------|
+| `mbh start` | Start the Bedrock server if it's offline     |
+| `mbh stop`  | Stop the Bedrock server if it's running      |
+| `mbh help`  | List available commands                      |
+| `mbh exit`  | Fully stop mbh (run this instead of ctrl + C) |
 
 ## Contributing
 
