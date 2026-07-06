@@ -104,7 +104,7 @@ async fn send_startup_message_if_offline(config: Config) {
 
         was_online = online;
 
-        tokio::time::sleep(Duration::from_secs(1)).await;
+        tokio::time::sleep(Duration::from_secs(2)).await;
     }
 }
 
