@@ -32,7 +32,7 @@ pub async fn start_proxy(config: Config, shared_bedrock_server: SharedBedrockSer
         Ok(p) => p,
         Err(e) => {
             println!("[MBH] Failed to bind on port {port}: {:?}", e);
-            panic!();
+            std::process::exit(1);
         }
     };
 

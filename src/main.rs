@@ -33,8 +33,8 @@ pub fn do_startup_checks() {
     let config = get_config();
 
     if !Path::new(&config.bedrock_file_path).exists() {
-        eprintln!("File '{}' not found.", config.bedrock_file_path);
-        panic!();
+        eprintln!("[MBH] File '{}' not found.", config.bedrock_file_path);
+        std::process::exit(1);
     }
 }
 

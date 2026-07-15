@@ -82,7 +82,7 @@ pub fn get_config() -> Config {
         Ok(c) => c,
         Err(e) => {
             eprintln!("[MBH] Failed to read mbh_config.json: {}", e);
-            return Config::default();
+            std::process::exit(1);
         }
     };
 
@@ -90,7 +90,7 @@ pub fn get_config() -> Config {
         Ok(config) => config,
         Err(e) => {
             eprintln!("[MBH] Failed to parse mbh_config.json: {}", e);
-            Config::default()
+            std::process::exit(1);
         }
     }
 }

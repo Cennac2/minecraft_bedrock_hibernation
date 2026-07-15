@@ -162,7 +162,7 @@ fn update_bedrock_server_port(config: Config) {
     let output = lines.join("\n") + "\n";
 
     if let Err(e) = std::fs::write(path, output) {
-        eprintln!("Failed to write properties file: {}", e);
+        eprintln!("[MBH] Failed to write properties file: {}", e);
     }
 }
 
