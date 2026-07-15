@@ -10,7 +10,7 @@ use tokio::sync::Mutex;
 
 use crate::bedrock_server::bedrock_server_io::{handle_server_error, handle_server_output};
 use crate::bedrock_server::bedrock_server_status::{
-    is_bedrock_server_alive, is_bedrock_server_online,
+    get_server_motd, is_bedrock_server_alive, is_bedrock_server_online,
 };
 use crate::config::config::Config;
 use crate::proxy::proxy::PLAYERS_COUNTER;
@@ -85,6 +85,42 @@ pub async fn start_bedrock_server(bedrock_server: SharedBedrockServer, config: C
     }
 
     tokio::spawn(update_server_status(bedrock_server, config));
+}
+
+pub async fn start_server_then_get_motd(config: Config) -> Option<String> {
+    let bedrock_server = Arc::new(Mutex::new(None));
+
+    {
+        let mut guard = bedrock_server.lock().await;
+        println!("[MBH] Getting server motd..");
+
+        update_bedrock_server_port(config.clone());
+
+        match get_bedrock_server_child(config.clone()) {
+            Ok(child) => {
+                *guard = Some(child);
+            }
+            Err(e) => {
+                eprintln!("[MBH] Failed to start bedrock server: {}", e);
+                return None;
+            }
+        }
+    }
+
+    let mut motd = None;
+
+    for _ in 1..=20 {
+        if is_bedrock_server_online(config.clone()).await {
+            motd = get_server_motd(config.clone()).await;
+            break;
+        }
+
+        tokio::time::sleep(Duration::from_secs(1)).await;
+    }
+
+    stop_bedrock_server(bedrock_server).await;
+
+    motd
 }
 
 fn update_bedrock_server_port(config: Config) {

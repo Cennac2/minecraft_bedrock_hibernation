@@ -9,7 +9,6 @@ use crate::{
 
 mod bedrock_server;
 mod config;
-mod protocol_version;
 mod proxy;
 
 const MBH_VERSION: &str = env!("CARGO_PKG_VERSION");

@@ -7,13 +7,14 @@ use std::{
 
 use crate::{
     bedrock_server::{
-        bedrock_server_child::{SharedBedrockServer, start_bedrock_server},
+        bedrock_server_child::{
+            SharedBedrockServer, start_bedrock_server, start_server_then_get_motd,
+        },
         bedrock_server_io::handle_user_input,
         bedrock_server_status::{get_server_motd, is_bedrock_server_alive},
     },
     config::config::Config,
     get_startup_message,
-    protocol_version::get_protocol_version,
     proxy::proxy_connector::start_proxy_connection,
 };
 use crossterm::{
@@ -35,11 +36,44 @@ pub async fn start_proxy(config: Config, shared_bedrock_server: SharedBedrockSer
         }
     };
 
+    let motd_parts: Option<Vec<String>> =
+        if config.version == "auto" || config.protocol_version <= 0 {
+            let motd = start_server_then_get_motd(config.clone())
+                .await
+                .unwrap_or_else(|| {
+                    eprintln!("[MBH] Failed to get minecraft version automatically!");
+                    std::process::exit(1);
+                });
+
+            Some(motd.split(';').map(String::from).collect())
+        } else {
+            None
+        };
+
+    let minecraft_version = if config.version == "auto" {
+        motd_parts
+            .as_ref()
+            .and_then(|parts| parts.get(3))
+            .cloned()
+            .unwrap_or_else(|| {
+                eprintln!("[MBH] Failed to parse minecraft version from MOTD!");
+                std::process::exit(1);
+            })
+    } else {
+        config.version.clone()
+    };
+
     let protocol_version = if config.protocol_version > 0 {
         config.protocol_version as u16
     } else {
-        get_protocol_version(&config.version)
-            .expect("Invalid Protocol version, please set the version in mbh_config.json")
+        motd_parts
+            .as_ref()
+            .and_then(|parts| parts.get(2))
+            .and_then(|p| p.parse::<u16>().ok())
+            .unwrap_or_else(|| {
+                eprintln!("[MBH] Failed to parse protocol version from MOTD!");
+                std::process::exit(1);
+            })
     };
 
     println!("{}", get_startup_message());
@@ -51,7 +85,7 @@ pub async fn start_proxy(config: Config, shared_bedrock_server: SharedBedrockSer
             &config.hibernating_motd,
             2,
             &protocol_version.to_string(),
-            &config.version,
+            &minecraft_version,
             "Creative",
             port,
         )
