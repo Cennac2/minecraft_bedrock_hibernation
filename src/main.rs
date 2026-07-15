@@ -1,13 +1,22 @@
-use crate::{config::config::get_config, proxy::proxy::start_proxy};
+use std::sync::Arc;
 
-mod proxy;
+use tokio::sync::Mutex;
+
+use crate::{
+    bedrock_server::bedrock_server_child::SharedBedrockServer, config::config::get_config,
+    proxy::proxy::start_proxy,
+};
+
+mod bedrock_server;
 mod config;
 mod protocol_version;
+mod proxy;
 
 const MBH_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 fn get_startup_message() -> String {
-    format!(r"
+    format!(
+        r"
  __  __ ____  _   _
 |  \/  | __ )| | | |
 | |\/| |  _ \| |_| |
@@ -17,16 +26,18 @@ fn get_startup_message() -> String {
 Minecraft Bedrock (server) Hibernation
 ---------------------------------------
 Server is hibernating, join to start it up.
-")
+"
+    )
 }
 
 #[tokio::main]
 async fn main() {
     let config = get_config();
+    let shared_bedrock_server: SharedBedrockServer = Arc::new(Mutex::new(None));
 
-    println!("Starting up MBH");
+    println!("[MBH] Starting up MBH");
 
-    start_proxy(config).await;
+    start_proxy(config, shared_bedrock_server).await;
 
-    println!("MBH Stopped");
+    println!("[MBH] MBH Stopped");
 }
