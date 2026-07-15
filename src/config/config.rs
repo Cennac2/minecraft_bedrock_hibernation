@@ -38,7 +38,7 @@ fn default_hibernating_motd() -> String {
 fn default_bedrock_file_path() -> String {
     #[cfg(target_os = "windows")]
     {
-        String::from("./bedrock_server.exe")
+        String::from(".\\bedrock_server.exe")
     }
 
     #[cfg(not(target_os = "windows"))]
