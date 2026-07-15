@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{path::Path, sync::Arc};
 
 use tokio::sync::Mutex;
 
@@ -29,8 +29,18 @@ Server is hibernating, join to start it up.
     )
 }
 
+pub fn do_startup_checks() {
+    let config = get_config();
+
+    if !Path::new(&config.bedrock_file_path).exists() {
+        eprintln!("File '{}' not found.", config.bedrock_file_path);
+        panic!();
+    }
+}
+
 #[tokio::main]
 async fn main() {
+    do_startup_checks();
     let config = get_config();
     let shared_bedrock_server: SharedBedrockServer = Arc::new(Mutex::new(None));
 
