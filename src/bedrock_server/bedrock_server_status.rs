@@ -66,23 +66,3 @@ pub async fn get_server_motd(config: Config) -> Option<String> {
 
     None
 }
-
-pub async fn get_server_motd_fak(config: Config) -> Option<String> {
-    let addr = &V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, config.port));
-
-    for _ in 1..=5 {
-        match timeout(Duration::from_secs(2), RaknetSocket::ping(addr)).await {
-            Ok(Ok((latency, motd))) => {
-                if latency >= 0 {
-                    return Some(motd);
-                }
-            }
-            Ok(Err(_)) => {}
-            Err(_) => {}
-        }
-
-        tokio::time::sleep(Duration::from_millis(500)).await;
-    }
-
-    None
-}

@@ -9,7 +9,7 @@ use crate::{
     bedrock_server::{
         bedrock_server_child::{SharedBedrockServer, start_bedrock_server},
         bedrock_server_io::handle_user_input,
-        bedrock_server_status::{get_server_motd, get_server_motd_fak, is_bedrock_server_alive},
+        bedrock_server_status::{get_server_motd, is_bedrock_server_alive},
     },
     config::config::Config,
     get_startup_message,
@@ -76,16 +76,7 @@ pub async fn start_proxy(config: Config, shared_bedrock_server: SharedBedrockSer
         config.clone(),
     ));
 
-    tokio::spawn(udk_loop(config.clone()));
-
     proxy_loop(proxy, shared_bedrock_server, config).await;
-}
-
-async fn udk_loop(config: Config) {
-    loop {
-        println!("{:?}", get_server_motd_fak(config.clone()).await);
-        tokio::time::sleep(Duration::from_secs(2)).await;
-    }
 }
 
 async fn update_server_motd(
