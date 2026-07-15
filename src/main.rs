@@ -3,7 +3,8 @@ use std::{path::Path, sync::Arc};
 use tokio::sync::Mutex;
 
 use crate::{
-    bedrock_server::bedrock_server_child::SharedBedrockServer, config::config::get_config,
+    bedrock_server::bedrock_server_child::SharedBedrockServer,
+    config::config::{Config, get_config},
     proxy::proxy::start_proxy,
 };
 
@@ -29,19 +30,22 @@ Server is hibernating, join to start it up.
     )
 }
 
-pub fn do_startup_checks() {
-    let config = get_config();
-
+pub fn do_startup_checks(config: Config) {
     if !Path::new(&config.bedrock_file_path).exists() {
         eprintln!("[MBH] File '{}' not found.", config.bedrock_file_path);
+        std::process::exit(1);
+    }
+
+    if config.bedrock_server_port == config.port {
+        eprintln!("[MBH] Error: Bedrock server port and proxy port should not be equal!");
         std::process::exit(1);
     }
 }
 
 #[tokio::main]
 async fn main() {
-    do_startup_checks();
     let config = get_config();
+    do_startup_checks(config.clone());
     let shared_bedrock_server: SharedBedrockServer = Arc::new(Mutex::new(None));
 
     println!("[MBH] Starting up MBH");

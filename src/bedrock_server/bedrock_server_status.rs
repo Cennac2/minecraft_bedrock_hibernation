@@ -28,7 +28,7 @@ pub async fn is_bedrock_server_online(config: Config) -> bool {
     ));
 
     for _ in 1..=5 {
-        match timeout(Duration::from_secs(2), RaknetSocket::ping(addr)).await {
+        match timeout(Duration::from_secs(1), RaknetSocket::ping(addr)).await {
             Ok(Ok((latency, _))) => {
                 if latency >= 0 {
                     return true;
