@@ -36,7 +36,15 @@ fn default_hibernating_motd() -> String {
     String::from("Server is Hibernating")
 }
 fn default_bedrock_file_path() -> String {
-    String::from("./bedrock_server")
+    #[cfg(target_os = "windows")]
+    {
+        String::from("./bedrock_server.exe")
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        String::from("./bedrock_server")
+    }
 }
 fn default_stop_empty_server_after_seconds() -> u32 {
     60
