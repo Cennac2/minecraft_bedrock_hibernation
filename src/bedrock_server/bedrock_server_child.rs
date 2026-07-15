@@ -109,7 +109,7 @@ pub async fn start_server_then_get_motd(config: Config) -> Option<String> {
 
     let mut motd = None;
 
-    tokio::time::sleep(Duration::from_millis(750)).await; //give the server some time to star
+    tokio::time::sleep(Duration::from_millis(750)).await; //give the server some time to start
 
     for _ in 1..=3 {
         if is_bedrock_server_online(config.clone()).await {
