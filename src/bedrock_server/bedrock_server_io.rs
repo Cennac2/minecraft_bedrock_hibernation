@@ -59,9 +59,8 @@ pub async fn handle_user_input(server: SharedBedrockServer) {
 
                     if active {
                         stop_bedrock_server(server).await;
+                        tokio::time::sleep(Duration::from_secs(2)).await;
                     }
-
-                    tokio::time::sleep(Duration::from_secs(2)).await; // wait for minecraft itself to stop, idk another way to wait for it other than this but it works.
 
                     println!("[MBH] Shutdown complete.");
                     std::process::exit(0);
