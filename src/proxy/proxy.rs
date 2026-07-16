@@ -84,6 +84,7 @@ pub async fn start_proxy(shared_bedrock_server: SharedBedrockServer) {
     proxy
         .set_motd(
             &motd_from_config.server_name,
+            &motd_from_config.world_name,
             motd_from_config.max_player_count,
             &protocol_version.to_string(),
             &minecraft_version,
@@ -93,6 +94,7 @@ pub async fn start_proxy(shared_bedrock_server: SharedBedrockServer) {
         .await;
 
     let default_motd = proxy.get_motd().await;
+    let server_guid = proxy.get_guid();
 
     tokio::spawn(handle_user_input(shared_bedrock_server.clone()));
 
@@ -102,12 +104,16 @@ pub async fn start_proxy(shared_bedrock_server: SharedBedrockServer) {
 
     let motd_handle = proxy.motd_handle();
 
-    tokio::spawn(update_server_motd(motd_handle, default_motd));
+    tokio::spawn(update_server_motd(motd_handle, default_motd, server_guid));
 
     proxy_loop(proxy, shared_bedrock_server).await;
 }
 
-async fn update_server_motd(motd_handle: Arc<RwLock<String>>, hibernating_motd: String) {
+async fn update_server_motd(
+    motd_handle: Arc<RwLock<String>>,
+    hibernating_motd: String,
+    server_guid: u64,
+) {
     let config = &CONFIG;
     loop {
         let server_motd = get_server_motd().await;
@@ -121,7 +127,7 @@ async fn update_server_motd(motd_handle: Arc<RwLock<String>>, hibernating_motd: 
                 motd.minecraft_version,
                 motd.player_count,
                 motd.max_player_count,
-                motd.server_id,
+                server_guid,
                 motd.world_name,
                 motd.gamemode,
                 motd.numeric_gamemode,

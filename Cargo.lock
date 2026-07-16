@@ -351,7 +351,7 @@ checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
 [[package]]
 name = "rust-raknet"
 version = "0.12.0"
-source = "git+https://github.com/Cennac2/rust-raknet#91813cad469c0f8621a8e3fb63fbb508d61a4827"
+source = "git+https://github.com/Cennac2/rust-raknet#66e6fcf163f257c5dae7f73a039d479146d01ffd"
 dependencies = [
  "bytes",
  "rand",
