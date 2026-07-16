@@ -177,6 +177,9 @@ Contributions are welcome! If you'd like to help out:
 3. Keep changes focused smaller, single-purpose PRs are easier to review
 4. Open a pull request describing what you changed and
 
+Or if you want to report a bug or request a feature then feel
+free to do so in the issues tab
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
