@@ -44,27 +44,3 @@ pub async fn is_bedrock_server_online() -> bool {
 
     false
 }
-
-pub async fn get_server_motd() -> Option<String> {
-    let config = &CONFIG;
-    let addr = &V4(SocketAddrV4::new(
-        Ipv4Addr::LOCALHOST,
-        config.bedrock_server_port,
-    ));
-
-    for _ in 1..=5 {
-        match timeout(Duration::from_secs(2), RaknetSocket::ping(addr)).await {
-            Ok(Ok((latency, motd))) => {
-                if latency >= 0 && !motd.is_empty() {
-                    return Some(motd);
-                }
-            }
-            Ok(Err(_)) => {}
-            Err(_) => {}
-        }
-
-        tokio::time::sleep(Duration::from_millis(500)).await;
-    }
-
-    None
-}

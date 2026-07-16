@@ -11,8 +11,9 @@ use tokio::sync::Mutex;
 use crate::CONFIG;
 use crate::bedrock_server::bedrock_server_io::{handle_server_error, handle_server_output};
 use crate::bedrock_server::bedrock_server_status::{
-    get_server_motd, is_bedrock_server_alive, is_bedrock_server_online,
+    is_bedrock_server_alive, is_bedrock_server_online,
 };
+use crate::bedrock_server::motd::get_server_motd_string;
 use crate::proxy::proxy::PLAYERS_COUNTER;
 
 pub type SharedBedrockServer = Arc<Mutex<Option<Child>>>;
@@ -114,7 +115,7 @@ pub async fn start_server_then_get_motd() -> Option<String> {
 
     for _ in 1..=3 {
         if is_bedrock_server_online().await {
-            motd = get_server_motd().await;
+            motd = get_server_motd_string().await;
             break;
         }
 

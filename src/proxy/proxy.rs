@@ -12,7 +12,8 @@ use crate::{
             SharedBedrockServer, start_bedrock_server, start_server_then_get_motd,
         },
         bedrock_server_io::handle_user_input,
-        bedrock_server_status::{get_server_motd, is_bedrock_server_alive},
+        bedrock_server_status::is_bedrock_server_alive,
+        motd::{get_motd_from_config, get_server_motd},
     },
     get_startup_message,
     proxy::proxy_connector::start_proxy_connection,
@@ -78,14 +79,16 @@ pub async fn start_proxy(shared_bedrock_server: SharedBedrockServer) {
 
     proxy.listen().await;
 
+    let motd_from_config = get_motd_from_config();
+
     proxy
         .set_motd(
-            &config.hibernating_motd,
-            2,
+            &motd_from_config.server_name,
+            motd_from_config.max_player_count,
             &protocol_version.to_string(),
             &minecraft_version,
             "Creative",
-            config.port,
+            motd_from_config.port_v4,
         )
         .await;
 
@@ -105,11 +108,28 @@ pub async fn start_proxy(shared_bedrock_server: SharedBedrockServer) {
 }
 
 async fn update_server_motd(motd_handle: Arc<RwLock<String>>, hibernating_motd: String) {
+    let config = &CONFIG;
     loop {
         let server_motd = get_server_motd().await;
 
         if let Some(motd) = server_motd {
-            *motd_handle.write().await = motd;
+            let motd_string = format!(
+                "{};{};{};{};{};{};{};{};{};{};{};{};{}",
+                motd.game_type,
+                motd.server_name,
+                motd.protocol_version,
+                motd.minecraft_version,
+                motd.player_count,
+                motd.max_player_count,
+                motd.server_id,
+                motd.world_name,
+                motd.gamemode,
+                motd.numeric_gamemode,
+                config.port,
+                motd.port_v6,
+                "0;0;1" // i have no idea what these are for
+            );
+            *motd_handle.write().await = motd_string;
         } else {
             *motd_handle.write().await = hibernating_motd.clone();
         }
