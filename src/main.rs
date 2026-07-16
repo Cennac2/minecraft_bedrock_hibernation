@@ -1,4 +1,7 @@
-use std::{path::Path, sync::Arc};
+use std::{
+    path::Path,
+    sync::{Arc, LazyLock},
+};
 
 use tokio::sync::Mutex;
 
@@ -30,7 +33,10 @@ Server is hibernating, join to start it up.
     )
 }
 
-pub fn do_startup_checks(config: Config) {
+pub static CONFIG: LazyLock<Config> = LazyLock::new(|| get_config());
+
+pub fn do_startup_checks() {
+    let config = &CONFIG;
     if !Path::new(&config.bedrock_file_path).exists() {
         eprintln!("[MBH] File '{}' not found.", config.bedrock_file_path);
         std::process::exit(1);
@@ -44,13 +50,12 @@ pub fn do_startup_checks(config: Config) {
 
 #[tokio::main]
 async fn main() {
-    let config = get_config();
-    do_startup_checks(config.clone());
+    do_startup_checks();
     let shared_bedrock_server: SharedBedrockServer = Arc::new(Mutex::new(None));
 
     println!("[MBH] Starting up MBH");
 
-    start_proxy(config, shared_bedrock_server).await;
+    start_proxy(shared_bedrock_server).await;
 
     println!("[MBH] MBH Stopped");
 }

@@ -8,18 +8,19 @@ use tokio::process::{Child, Command};
 
 use tokio::sync::Mutex;
 
+use crate::CONFIG;
 use crate::bedrock_server::bedrock_server_io::{handle_server_error, handle_server_output};
 use crate::bedrock_server::bedrock_server_status::{
     get_server_motd, is_bedrock_server_alive, is_bedrock_server_online,
 };
-use crate::config::config::Config;
 use crate::proxy::proxy::PLAYERS_COUNTER;
 
 pub type SharedBedrockServer = Arc<Mutex<Option<Child>>>;
 
 static SERVER_STOPPED_MANUALLY: AtomicBool = AtomicBool::new(false);
 
-fn get_bedrock_server_child(config: Config) -> Result<Child, std::io::Error> {
+fn get_bedrock_server_child() -> Result<Child, std::io::Error> {
+    let config = &CONFIG;
     let bedrock_path = Path::new(&config.bedrock_file_path)
         .canonicalize()
         .map_err(|e| {
@@ -47,15 +48,15 @@ fn get_bedrock_server_child(config: Config) -> Result<Child, std::io::Error> {
         })
 }
 
-pub async fn start_bedrock_server(bedrock_server: SharedBedrockServer, config: Config) {
+pub async fn start_bedrock_server(bedrock_server: SharedBedrockServer) {
     {
         let mut guard = bedrock_server.lock().await;
         let (stdout, stderr) = {
             println!("[MBH] Starting up Bedrock Server");
 
-            update_bedrock_server_port(config.clone());
+            update_bedrock_server_port();
 
-            match get_bedrock_server_child(config.clone()) {
+            match get_bedrock_server_child() {
                 Ok(child) => {
                     guard.get_or_insert_with(|| child);
                     match guard.as_mut() {
@@ -84,19 +85,19 @@ pub async fn start_bedrock_server(bedrock_server: SharedBedrockServer, config: C
         }
     }
 
-    tokio::spawn(update_server_status(bedrock_server, config));
+    tokio::spawn(update_server_status(bedrock_server));
 }
 
-pub async fn start_server_then_get_motd(config: Config) -> Option<String> {
+pub async fn start_server_then_get_motd() -> Option<String> {
     let bedrock_server = Arc::new(Mutex::new(None));
 
     {
         let mut guard = bedrock_server.lock().await;
         println!("[MBH] Getting server motd..");
 
-        update_bedrock_server_port(config.clone());
+        update_bedrock_server_port();
 
-        match get_bedrock_server_child(config.clone()) {
+        match get_bedrock_server_child() {
             Ok(child) => {
                 *guard = Some(child);
             }
@@ -112,8 +113,8 @@ pub async fn start_server_then_get_motd(config: Config) -> Option<String> {
     tokio::time::sleep(Duration::from_millis(750)).await; //give the server some time to start
 
     for _ in 1..=3 {
-        if is_bedrock_server_online(config.clone()).await {
-            motd = get_server_motd(config.clone()).await;
+        if is_bedrock_server_online().await {
+            motd = get_server_motd().await;
             break;
         }
 
@@ -125,7 +126,8 @@ pub async fn start_server_then_get_motd(config: Config) -> Option<String> {
     motd
 }
 
-fn update_bedrock_server_port(config: Config) {
+fn update_bedrock_server_port() {
+    let config = &CONFIG;
     let bedrock_path = Path::new(&config.bedrock_file_path);
 
     let bedrock_dir = bedrock_path
@@ -168,7 +170,8 @@ fn update_bedrock_server_port(config: Config) {
     }
 }
 
-async fn update_server_status(server: SharedBedrockServer, config: Config) {
+async fn update_server_status(server: SharedBedrockServer) {
+    let config = &CONFIG;
     let mut idle_seconds: u32 = 0;
 
     loop {
@@ -192,7 +195,7 @@ async fn update_server_status(server: SharedBedrockServer, config: Config) {
         }
 
         let active = is_bedrock_server_alive(server.clone()).await;
-        let is_online = is_bedrock_server_online(config.clone()).await;
+        let is_online = is_bedrock_server_online().await;
 
         if active && is_online {
             if PLAYERS_COUNTER.load(std::sync::atomic::Ordering::SeqCst) == 0 {

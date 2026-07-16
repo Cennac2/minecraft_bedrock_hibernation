@@ -6,7 +6,7 @@ use std::{
 use rust_raknet::RaknetSocket;
 use tokio::time::timeout;
 
-use crate::{bedrock_server::bedrock_server_child::SharedBedrockServer, config::config::Config};
+use crate::{CONFIG, bedrock_server::bedrock_server_child::SharedBedrockServer};
 
 pub async fn is_bedrock_server_alive(bedrock_server: SharedBedrockServer) -> bool {
     let mut guard = bedrock_server.lock().await;
@@ -21,7 +21,8 @@ pub async fn is_bedrock_server_alive(bedrock_server: SharedBedrockServer) -> boo
     }
 }
 
-pub async fn is_bedrock_server_online(config: Config) -> bool {
+pub async fn is_bedrock_server_online() -> bool {
+    let config = &CONFIG;
     let addr = &V4(SocketAddrV4::new(
         Ipv4Addr::LOCALHOST,
         config.bedrock_server_port,
@@ -44,7 +45,8 @@ pub async fn is_bedrock_server_online(config: Config) -> bool {
     false
 }
 
-pub async fn get_server_motd(config: Config) -> Option<String> {
+pub async fn get_server_motd() -> Option<String> {
+    let config = &CONFIG;
     let addr = &V4(SocketAddrV4::new(
         Ipv4Addr::LOCALHOST,
         config.bedrock_server_port,

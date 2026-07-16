@@ -4,12 +4,9 @@ use tokio::io::AsyncWriteExt;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::{ChildStderr, ChildStdout};
 
-use crate::{
-    bedrock_server::{
-        bedrock_server_child::{SharedBedrockServer, start_bedrock_server, stop_bedrock_server},
-        bedrock_server_status::is_bedrock_server_alive,
-    },
-    config::config::Config,
+use crate::bedrock_server::{
+    bedrock_server_child::{SharedBedrockServer, start_bedrock_server, stop_bedrock_server},
+    bedrock_server_status::is_bedrock_server_alive,
 };
 
 pub async fn handle_server_output(stdout: ChildStdout) {
@@ -30,7 +27,7 @@ pub async fn handle_server_error(stderr: ChildStderr) {
     }
 }
 
-pub async fn handle_user_input(server: SharedBedrockServer, config: Config) {
+pub async fn handle_user_input(server: SharedBedrockServer) {
     let stdin = tokio::io::stdin();
     let mut lines = tokio::io::BufReader::new(stdin).lines();
 
@@ -45,7 +42,7 @@ pub async fn handle_user_input(server: SharedBedrockServer, config: Config) {
                     if active {
                         println!("[MBH] Bedrock Server is already active!");
                     } else {
-                        start_bedrock_server(server.clone(), config.clone()).await;
+                        start_bedrock_server(server.clone()).await;
                     }
                 }
                 "stop" => {

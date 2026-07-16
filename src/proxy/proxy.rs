@@ -6,6 +6,7 @@ use std::{
 };
 
 use crate::{
+    CONFIG,
     bedrock_server::{
         bedrock_server_child::{
             SharedBedrockServer, start_bedrock_server, start_server_then_get_motd,
@@ -13,7 +14,6 @@ use crate::{
         bedrock_server_io::handle_user_input,
         bedrock_server_status::{get_server_motd, is_bedrock_server_alive},
     },
-    config::config::Config,
     get_startup_message,
     proxy::proxy_connector::start_proxy_connection,
 };
@@ -24,26 +24,24 @@ use crossterm::{
 use rust_raknet::{RaknetListener, RaknetSocket};
 use tokio::sync::RwLock;
 
-pub async fn start_proxy(config: Config, shared_bedrock_server: SharedBedrockServer) {
-    let port = config.port;
+pub async fn start_proxy(shared_bedrock_server: SharedBedrockServer) {
+    let config = &CONFIG;
 
-    let sockaddr = &V4(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, port));
+    let sockaddr = &V4(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, config.port));
     let mut proxy = match RaknetListener::bind(sockaddr).await {
         Ok(p) => p,
         Err(e) => {
-            println!("[MBH] Failed to bind on port {port}: {:?}", e);
+            println!("[MBH] Failed to bind on port {}: {:?}", config.port, e);
             std::process::exit(1);
         }
     };
 
     let motd_parts: Option<Vec<String>> =
         if config.version == "auto" || config.protocol_version <= 0 {
-            let motd = start_server_then_get_motd(config.clone())
-                .await
-                .unwrap_or_else(|| {
-                    eprintln!("[MBH] Failed to get minecraft version automatically!");
-                    std::process::exit(1);
-                });
+            let motd = start_server_then_get_motd().await.unwrap_or_else(|| {
+                eprintln!("[MBH] Failed to get minecraft version automatically!");
+                std::process::exit(1);
+            });
 
             Some(motd.split(';').map(String::from).collect())
         } else {
@@ -87,16 +85,13 @@ pub async fn start_proxy(config: Config, shared_bedrock_server: SharedBedrockSer
             &protocol_version.to_string(),
             &minecraft_version,
             "Creative",
-            port,
+            config.port,
         )
         .await;
 
     let default_motd = proxy.get_motd().await;
 
-    tokio::spawn(handle_user_input(
-        shared_bedrock_server.clone(),
-        config.clone(),
-    ));
+    tokio::spawn(handle_user_input(shared_bedrock_server.clone()));
 
     tokio::spawn(send_startup_message_if_offline(
         shared_bedrock_server.clone(),
@@ -104,22 +99,14 @@ pub async fn start_proxy(config: Config, shared_bedrock_server: SharedBedrockSer
 
     let motd_handle = proxy.motd_handle();
 
-    tokio::spawn(update_server_motd(
-        motd_handle,
-        default_motd,
-        config.clone(),
-    ));
+    tokio::spawn(update_server_motd(motd_handle, default_motd));
 
-    proxy_loop(proxy, shared_bedrock_server, config).await;
+    proxy_loop(proxy, shared_bedrock_server).await;
 }
 
-async fn update_server_motd(
-    motd_handle: Arc<RwLock<String>>,
-    hibernating_motd: String,
-    config: Config,
-) {
+async fn update_server_motd(motd_handle: Arc<RwLock<String>>, hibernating_motd: String) {
     loop {
-        let server_motd = get_server_motd(config.clone()).await;
+        let server_motd = get_server_motd().await;
 
         if let Some(motd) = server_motd {
             *motd_handle.write().await = motd;
@@ -151,7 +138,9 @@ pub static PLAYERS_COUNTER: AtomicU32 = AtomicU32::new(0);
 
 const RAKNET_VERSION: u8 = 11; // I don't think this ever changed so I'm keeping it as 11
 
-pub async fn proxy_loop(mut proxy: RaknetListener, server: SharedBedrockServer, config: Config) {
+pub async fn proxy_loop(mut proxy: RaknetListener, server: SharedBedrockServer) {
+    let config = &CONFIG;
+
     let bds_addr = &V4(SocketAddrV4::new(
         Ipv4Addr::LOCALHOST,
         config.bedrock_server_port,
@@ -177,7 +166,7 @@ pub async fn proxy_loop(mut proxy: RaknetListener, server: SharedBedrockServer, 
             let active = is_bedrock_server_alive(server.clone()).await;
 
             if !active {
-                start_bedrock_server(server.clone(), config.clone()).await;
+                start_bedrock_server(server.clone()).await;
             }
 
             let server_client =
