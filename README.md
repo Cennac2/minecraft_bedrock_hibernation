@@ -142,7 +142,7 @@ directory:
 | `port`                            | The public port players connect to (proxy's listening port)                               |
 | `bedrock_server_port`             | The port the real Bedrock server runs on internally (should NOT be equal to proxy's port) |
 | `protocol_version`                | Bedrock protocol version to advertise; set to `-1` to auto-detect.                        |
-| `version`                         | Minecraft Bedrock version string, set to "auto" to auto detect                            |
+| `version`                         | Minecraft Bedrock version string, set to `auto` to auto detect                            |
 | `hibernating_motd`                | Message shown while the server is asleep                                                  |
 | `bedrock_file_path`               | Path to your Bedrock server executable                                                    |
 | `stop_empty_server_after_seconds` | How long the server will wait before stopping if there are no players                     |
