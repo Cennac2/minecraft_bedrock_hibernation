@@ -1,4 +1,4 @@
-# Minecraft Bedrock (server) Hibernation (mbh)
+# Minecraft Bedrock server Hibernation (mbh)
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-2024%20edition-orange.svg)](https://www.rust-lang.org)
