@@ -167,7 +167,7 @@ const RAKNET_VERSION: u8 = 11; // I don't think this ever changed so I'm keeping
 pub async fn proxy_loop(mut proxy: RaknetListener, server: SharedBedrockServer) {
     let config = &CONFIG;
 
-    let bds_addr = &V4(SocketAddrV4::new(
+    let bds_addr = V4(SocketAddrV4::new(
         Ipv4Addr::LOCALHOST,
         config.bedrock_server_port,
     ));
@@ -188,21 +188,25 @@ pub async fn proxy_loop(mut proxy: RaknetListener, server: SharedBedrockServer) 
                 .unwrap_or(V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 1)))
         );
 
-        let active = is_bedrock_server_alive(server.clone()).await;
+        let server = server.clone();
 
-        if !active {
-            start_bedrock_server(server.clone()).await;
-        }
+        tokio::spawn(async move {
+            let active = is_bedrock_server_alive(server.clone()).await;
 
-        let server_client = match RaknetSocket::connect_with_version(bds_addr, RAKNET_VERSION).await
-        {
-            Ok(s) => s,
-            Err(e) => {
-                println!("[MBH] Failed to connect to bedrock_server: {:?}", e);
-                continue;
+            if !active {
+                start_bedrock_server(server.clone()).await;
             }
-        };
 
-        tokio::spawn(start_proxy_connection(connection, server_client));
+            let server_client =
+                match RaknetSocket::connect_with_version(&bds_addr, RAKNET_VERSION).await {
+                    Ok(s) => s,
+                    Err(e) => {
+                        println!("[MBH] Failed to connect to bedrock_server: {:?}", e);
+                        return;
+                    }
+                };
+
+            tokio::spawn(start_proxy_connection(connection, server_client));
+        });
     }
 }
