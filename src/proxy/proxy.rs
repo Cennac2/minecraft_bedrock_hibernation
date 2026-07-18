@@ -177,7 +177,7 @@ pub async fn proxy_loop(mut proxy: RaknetListener, server: SharedBedrockServer) 
             Ok(c) => c,
             Err(e) => {
                 println!("[MBH] Failed to accept request: {:?}", e);
-                return;
+                continue;
             }
         };
 
