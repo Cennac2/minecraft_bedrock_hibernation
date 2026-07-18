@@ -8,7 +8,6 @@ use tokio::time::timeout;
 
 use crate::CONFIG;
 
-#[allow(dead_code)] // will get rid of this later
 #[derive(Debug)]
 pub struct Motd {
     pub game_type: String,
@@ -17,7 +16,6 @@ pub struct Motd {
     pub minecraft_version: String,
     pub player_count: u32,
     pub max_player_count: u32,
-    pub server_id: String,
     pub world_name: String,
     pub gamemode: String,
     pub numeric_gamemode: u8,
@@ -68,7 +66,6 @@ pub async fn get_server_motd() -> Option<Motd> {
             minecraft_version: parts[3].to_string(),
             player_count: parts[4].parse().ok()?,
             max_player_count: parts[5].parse().ok()?,
-            server_id: parts[6].to_string(),
             world_name: parts[7].to_string(),
             gamemode: parts[8].to_string(),
             numeric_gamemode: parts[9].parse().ok()?,
@@ -90,7 +87,6 @@ pub fn get_motd_from_config() -> Motd {
         minecraft_version: config.version.clone(),
         player_count: 0,
         max_player_count: 1,
-        server_id: String::new(),
         world_name: String::from("Bedrock level"),
         gamemode: String::from("Creative"),
         numeric_gamemode: 1, // I think creative is 1?
