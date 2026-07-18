@@ -188,28 +188,21 @@ pub async fn proxy_loop(mut proxy: RaknetListener, server: SharedBedrockServer) 
                 .unwrap_or(V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 1)))
         );
 
-        if let Ok(packet) = connection.recv().await {
-            let active = is_bedrock_server_alive(server.clone()).await;
+        let active = is_bedrock_server_alive(server.clone()).await;
 
-            if !active {
-                start_bedrock_server(server.clone()).await;
-            }
-
-            let server_client =
-                match RaknetSocket::connect_with_version(bds_addr, RAKNET_VERSION).await {
-                    Ok(s) => s,
-                    Err(e) => {
-                        println!("[MBH] Failed to connect to bedrock_server: {:?}", e);
-                        continue;
-                    }
-                };
-
-            server_client
-                .send(&packet, rust_raknet::Reliability::ReliableOrdered)
-                .await
-                .unwrap();
-
-            tokio::spawn(start_proxy_connection(connection, server_client));
+        if !active {
+            start_bedrock_server(server.clone()).await;
         }
+
+        let server_client = match RaknetSocket::connect_with_version(bds_addr, RAKNET_VERSION).await
+        {
+            Ok(s) => s,
+            Err(e) => {
+                println!("[MBH] Failed to connect to bedrock_server: {:?}", e);
+                continue;
+            }
+        };
+
+        tokio::spawn(start_proxy_connection(connection, server_client));
     }
 }
