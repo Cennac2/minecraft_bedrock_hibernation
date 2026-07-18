@@ -43,7 +43,11 @@ pub async fn start_proxy_connection(client: RaknetSocket, server_client: RaknetS
         _ = server_to_client => {}
     }
 
-    println!("[MBH] {} has left the server!", client.peer_addr().unwrap());
+    let peer_addr = client
+        .peer_addr()
+        .map(|a| a.to_string())
+        .unwrap_or_else(|_| "unknown".to_string());
+    println!("[MBH] {} has left the server!", peer_addr);
 
     PLAYERS_COUNTER.fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
 }

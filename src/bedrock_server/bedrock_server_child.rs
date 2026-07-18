@@ -51,11 +51,12 @@ fn get_bedrock_server_child() -> Result<Child, std::io::Error> {
 
 pub async fn start_bedrock_server(bedrock_server: SharedBedrockServer) {
     {
-        let mut guard = bedrock_server.lock().await;
         let (stdout, stderr) = {
             println!("[MBH] Starting up Bedrock Server");
 
             update_bedrock_server_port();
+
+            let mut guard = bedrock_server.lock().await;
 
             match get_bedrock_server_child() {
                 Ok(child) => {

@@ -185,7 +185,8 @@ pub async fn proxy_loop(mut proxy: RaknetListener, server: SharedBedrockServer) 
             "[MBH] Player Connected from {}",
             connection
                 .peer_addr()
-                .unwrap_or(V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 1)))
+                .map(|a| a.to_string())
+                .unwrap_or_else(|_| "unknown".to_string())
         );
 
         let server = server.clone();
