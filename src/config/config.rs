@@ -2,7 +2,9 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+const CONFIG_PATH: &str = "mbh_config.json";
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Config {
     #[serde(default = "default_port")]
     pub port: u16,
@@ -65,32 +67,51 @@ impl Default for Config {
 }
 
 pub fn get_config() -> Config {
-    let path = "mbh_config.json";
+    let path = Path::new(CONFIG_PATH);
 
-    if !Path::new(path).exists() {
+    if !path.exists() {
         let default_config = Config::default();
-        if let Err(e) = fs::write(
-            path,
-            serde_json::to_string_pretty(&default_config).unwrap_or_default(),
-        ) {
-            eprintln!("[MBH] Failed to create config file: {}", e);
+
+        match serde_json::to_string_pretty(&default_config) {
+            Ok(serialized) => {
+                if let Err(e) = fs::write(path, serialized) {
+                    eprintln!("[MBH] Failed to create config file: {}", e);
+                }
+            }
+            Err(e) => {
+                eprintln!("[MBH] Failed to serialize default config: {}", e);
+            }
         }
+
         return default_config;
     }
 
     let content = match fs::read_to_string(path) {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("[MBH] Failed to read mbh_config.json: {}", e);
+            eprintln!("[MBH] Failed to read {}: {}", CONFIG_PATH, e);
             std::process::exit(1);
         }
     };
 
-    match serde_json::from_str(&content) {
+    let config: Config = match serde_json::from_str(&content) {
         Ok(config) => config,
         Err(e) => {
-            eprintln!("[MBH] Failed to parse mbh_config.json: {}", e);
+            eprintln!("[MBH] Failed to parse {}: {}", CONFIG_PATH, e);
             std::process::exit(1);
         }
+    };
+
+    match serde_json::to_string_pretty(&config) {
+        Ok(serialized) => {
+            if let Err(e) = fs::write(path, serialized) {
+                eprintln!("[MBH] Failed to re-sync config file: {}", e);
+            }
+        }
+        Err(e) => {
+            eprintln!("[MBH] Failed to serialize config for re-sync: {}", e);
+        }
     }
+
+    config
 }
